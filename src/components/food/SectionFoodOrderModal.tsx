@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { toPng } from 'html-to-image';
 import { useAttendanceContext } from '../../context/AttendanceContext';
 import type { Section, Site, MealType, CanteenOrderStatus } from '../../types';
 import { Modal } from '../common/Modal';
@@ -23,7 +24,6 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import {
-  exportSectionMealSummaryAsImage,
   exportSectionMealSummaryAsPDF,
 } from '../../utils/exportMealSummary';
 
@@ -64,6 +64,7 @@ export const SectionFoodOrderModal: React.FC<SectionFoodOrderModalProps> = ({
 
   const [activeMeal, setActiveMeal] = useState<MealType>(initialMealType);
   const [internalDate, setInternalDate] = useState(selectedDate);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Sync date when prop changes
   useEffect(() => {
@@ -335,14 +336,22 @@ export const SectionFoodOrderModal: React.FC<SectionFoodOrderModalProps> = ({
   const [isExportingImage, setIsExportingImage] = useState(false);
 
   const handleExportImage = async () => {
+    if (!modalRef.current) return;
     try {
       setIsExportingImage(true);
-      await exportSectionMealSummaryAsImage({
-        section,
-        siteName: site?.name || 'Project Site',
-        date: internalDate,
-        foodOrders,
+      const dataUrl = await toPng(modalRef.current, {
+        quality: 1.0,
+        pixelRatio: 4, // High DPI
+        backgroundColor: '#ffffff',
       });
+      const filename = `food_summary_${section.name}_${internalDate}.png`;
+      const downloadLink = document.createElement('a');
+      downloadLink.href = dataUrl;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
       if (onSuccessToast) {
         onSuccessToast(`🖼️ Meal Summary image for Section ${section.name} exported successfully!`);
       }
@@ -455,7 +464,7 @@ export const SectionFoodOrderModal: React.FC<SectionFoodOrderModalProps> = ({
       icon={<Utensils className="h-5 w-5 text-orange-600" />}
       size="2xl"
     >
-      <div className="space-y-6">
+      <div ref={modalRef} className="space-y-6 bg-white p-2">
         {/* Top Header Card with Section Identity and Date Selector */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 rounded-2xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">

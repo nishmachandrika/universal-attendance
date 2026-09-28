@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
+import { toPng } from 'html-to-image';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAttendanceContext } from '../../context/AttendanceContext';
 import { DataTable } from '../../components/common/DataTable';
@@ -22,9 +23,7 @@ import {
   Utensils,
   Award,
   Download,
-  Printer,
   Search,
-  BookOpen,
   Eye,
   FileText,
   FileCheck2,
@@ -48,6 +47,7 @@ export type ReportType =
 export const Reports: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialReport = (searchParams.get('report') as ReportType) || 'daily-attendance-section';
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const {
     sites,
@@ -1000,8 +1000,8 @@ export const Reports: React.FC = () => {
       transfersSubView === 'site'
         ? siteTransfers
         : transfersSubView === 'section'
-        ? sectionTransfers
-        : list;
+          ? sectionTransfers
+          : list;
 
     const totalTransfers = list.length;
     const totalSiteTransfers = siteTransfers.length;
@@ -1384,8 +1384,8 @@ export const Reports: React.FC = () => {
           advancePeriod === 'daily'
             ? `Date: ${selectedDate}`
             : advancePeriod === 'weekly'
-            ? activeWeekInfo.label
-            : `Month: ${selectedMonth}`;
+              ? activeWeekInfo.label
+              : `Month: ${selectedMonth}`;
       }
 
       if (advanceDimension === 'section') {
@@ -1442,8 +1442,8 @@ export const Reports: React.FC = () => {
           foodPeriod === 'daily'
             ? `Date: ${selectedDate}`
             : foodPeriod === 'weekly'
-            ? activeWeekInfo.label
-            : `Month: ${selectedMonth}`;
+              ? activeWeekInfo.label
+              : `Month: ${selectedMonth}`;
       }
 
       if (foodDimension === 'section') {
@@ -1489,10 +1489,10 @@ export const Reports: React.FC = () => {
           overallPeriod === 'daily'
             ? `Date: ${selectedDate}`
             : overallPeriod === 'weekly'
-            ? activeWeekInfo.label
-            : overallPeriod === 'monthly'
-            ? `Month: ${selectedMonth}`
-            : 'Lifetime Cumulative Master';
+              ? activeWeekInfo.label
+              : overallPeriod === 'monthly'
+                ? `Month: ${selectedMonth}`
+                : 'Lifetime Cumulative Master';
       }
 
       const totalWorkers = overallReportData.length;
@@ -1527,8 +1527,8 @@ export const Reports: React.FC = () => {
         transfersSubView === 'site'
           ? 'Site Transfers List'
           : transfersSubView === 'section'
-          ? 'Section Transfers List'
-          : 'All Transfers & Custom Migrations';
+            ? 'Section Transfers List'
+            : 'All Transfers & Custom Migrations';
 
       reportTitle = `Employees Transfers & Migrations Register (${subViewTitle})`;
       subtitle = 'Statutory Workforce Movement, Cross-Site Deployment & Trade Section Relocation Audit';
@@ -1538,12 +1538,12 @@ export const Reports: React.FC = () => {
           dateFilterMode === 'custom'
             ? `Custom: ${customStartDate} to ${customEndDate}`
             : transfersPeriod === 'daily'
-            ? `Date: ${selectedDate}`
-            : transfersPeriod === 'weekly'
-            ? activeWeekInfo.label
-            : transfersPeriod === 'monthly'
-            ? `Month: ${selectedMonth}`
-            : 'All-Time Historical Register';
+              ? `Date: ${selectedDate}`
+              : transfersPeriod === 'weekly'
+                ? activeWeekInfo.label
+                : transfersPeriod === 'monthly'
+                  ? `Month: ${selectedMonth}`
+                  : 'All-Time Historical Register';
       }
 
       summaryKpis = [
@@ -1644,9 +1644,71 @@ export const Reports: React.FC = () => {
 
   const activeRepDef = reportDefinitions.find((r) => r.id === activeReport) || reportDefinitions[0];
 
+  const reportExportRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadReportImage = async () => {
+    if (!reportExportRef.current) return;
+    try {
+      const tableWrapper = reportExportRef.current.querySelector('.overflow-x-auto');
+      const tableOuter = reportExportRef.current.querySelector('.overflow-hidden');
+      
+      const originalWrapperOverflow = tableWrapper ? (tableWrapper as HTMLElement).style.overflow : '';
+      const originalOuterOverflow = tableOuter ? (tableOuter as HTMLElement).style.overflow : '';
+      const originalRefWidth = reportExportRef.current.style.width;
+      const originalRefMaxWidth = reportExportRef.current.style.maxWidth;
+      const originalRefOverflow = reportExportRef.current.style.overflow;
+      
+      // Temporarily remove overflow constraints and force max width
+      if (tableWrapper) (tableWrapper as HTMLElement).style.overflow = 'visible';
+      if (tableOuter) (tableOuter as HTMLElement).style.overflow = 'visible';
+      
+      reportExportRef.current.style.overflow = 'visible';
+      reportExportRef.current.style.maxWidth = 'none';
+      reportExportRef.current.style.width = 'max-content';
+      
+      // Give the browser a tick to apply the max-content reflow
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Calculate true dimensions including overflowing children
+      const scrollWidth = Math.max(reportExportRef.current.scrollWidth, reportExportRef.current.offsetWidth);
+      const scrollHeight = Math.max(reportExportRef.current.scrollHeight, reportExportRef.current.offsetHeight);
+      
+      // Force explicit pixel dimensions to prevent bounding box cutoff
+      reportExportRef.current.style.width = `${scrollWidth}px`;
+
+      const dataUrl = await toPng(reportExportRef.current, { 
+        width: scrollWidth,
+        height: scrollHeight,
+        quality: 1.0, 
+        pixelRatio: 4, 
+        backgroundColor: '#ffffff',
+        style: {
+          color: '#000000', // ensure text is black/dark
+        }
+      });
+      
+      // Revert styles
+      if (tableWrapper) (tableWrapper as HTMLElement).style.overflow = originalWrapperOverflow;
+      if (tableOuter) (tableOuter as HTMLElement).style.overflow = originalOuterOverflow;
+      
+      reportExportRef.current.style.width = originalRefWidth;
+      reportExportRef.current.style.maxWidth = originalRefMaxWidth;
+      reportExportRef.current.style.overflow = originalRefOverflow;
+
+      const link = document.createElement('a');
+      const fileNameDate = dateFilterMode === 'custom' ? customEndDate : selectedDate;
+      link.download = `${activeRepDef.id}-${fileNameDate}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error generating image', err);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Top Page Header */}
+    <>
+      <div ref={reportRef} className="space-y-6 bg-[#f8fafc]">
+        {/* Top Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
@@ -1658,50 +1720,6 @@ export const Reports: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-1">
             Reports & Analytics Hub
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-            Multi-dimensional statutory attendance, weekly/monthly muster rolls, advances, food, employee transfers &amp; migrations, and custom worker audit slips.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-2 self-start sm:self-center flex-wrap gap-y-2">
-          {/* Custom Worker Audit Slip Launcher Button */}
-          <button
-            type="button"
-            onClick={() => setIsCustomSlipPickerOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs inline-flex items-center space-x-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-            title="Generate Custom Worker Audit Slip with Present/Absent Dates, Advances, Running Balance & Signatures"
-          >
-            <FileCheck2 className="h-3.5 w-3.5" />
-            <span>Custom Worker Audit Slip</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsRegistersModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs inline-flex items-center space-x-1.5 transition-all cursor-pointer"
-            title="Browse all 7 report hubs"
-          >
-            <BookOpen className="h-3.5 w-3.5 text-blue-600" />
-            <span>Reports Directory (7)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsExportModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs inline-flex items-center space-x-2 shadow-xs transition-all active:scale-95 cursor-pointer"
-            title="Export Image (PNG) or Save as PDF"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Export to Image & PDF</span>
-          </button>
-
-          <button
-            onClick={() => window.print()}
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs inline-flex items-center space-x-1.5 transition-all cursor-pointer"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            <span>Print</span>
-          </button>
         </div>
       </div>
 
@@ -1715,17 +1733,15 @@ export const Reports: React.FC = () => {
               key={rep.id}
               onClick={() => handleSwitchReport(rep.id)}
               type="button"
-              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                isActive
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${isActive
                   ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-1 ring-blue-500/20'
                   : 'bg-white hover:bg-slate-50 border-slate-200/80 hover:border-slate-300'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div
-                  className={`h-8 w-8 rounded-xl flex items-center justify-center ${
-                    isActive ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
-                  }`}
+                  className={`h-8 w-8 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                 </div>
@@ -1751,18 +1767,16 @@ export const Reports: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDateFilterMode('standard')}
-                className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                  dateFilterMode === 'standard' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                }`}
+                className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${dateFilterMode === 'standard' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                  }`}
               >
                 Standard Cycle (Daily / Weekly / Monthly)
               </button>
               <button
                 type="button"
                 onClick={() => setDateFilterMode('custom')}
-                className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                  dateFilterMode === 'custom' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600'
-                }`}
+                className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${dateFilterMode === 'custom' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600'
+                  }`}
               >
                 Custom Date Range (Costam Wise)
               </button>
@@ -1812,9 +1826,9 @@ export const Reports: React.FC = () => {
             <>
               {/* Standard Mode: Dynamic Date / Period Selectors based on Report */}
               {activeReport === 'daily-attendance-section' ||
-              (activeReport === 'advance-payments' && advancePeriod === 'daily') ||
-              (activeReport === 'food-report' && foodPeriod === 'daily') ||
-              (activeReport === 'overall-reports' && overallPeriod === 'daily') ? (
+                (activeReport === 'advance-payments' && advancePeriod === 'daily') ||
+                (activeReport === 'food-report' && foodPeriod === 'daily') ||
+                (activeReport === 'overall-reports' && overallPeriod === 'daily') ? (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     Select Date
@@ -1830,10 +1844,10 @@ export const Reports: React.FC = () => {
 
               {/* Month Selector for Weekly, Monthly, or Monthly period modes */}
               {activeReport === 'weekly-attendance' ||
-              activeReport === 'monthly-attendance' ||
-              (activeReport === 'advance-payments' && advancePeriod !== 'daily') ||
-              (activeReport === 'food-report' && foodPeriod !== 'daily') ||
-              (activeReport === 'overall-reports' && overallPeriod === 'monthly') ? (
+                activeReport === 'monthly-attendance' ||
+                (activeReport === 'advance-payments' && advancePeriod !== 'daily') ||
+                (activeReport === 'food-report' && foodPeriod !== 'daily') ||
+                (activeReport === 'overall-reports' && overallPeriod === 'monthly') ? (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     Month
@@ -1849,9 +1863,9 @@ export const Reports: React.FC = () => {
 
               {/* Week Selector Pills if Weekly Report or Weekly Period */}
               {activeReport === 'weekly-attendance' ||
-              (activeReport === 'advance-payments' && advancePeriod === 'weekly') ||
-              (activeReport === 'food-report' && foodPeriod === 'weekly') ||
-              (activeReport === 'overall-reports' && overallPeriod === 'weekly') ? (
+                (activeReport === 'advance-payments' && advancePeriod === 'weekly') ||
+                (activeReport === 'food-report' && foodPeriod === 'weekly') ||
+                (activeReport === 'overall-reports' && overallPeriod === 'weekly') ? (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                     Select Week (7-Day Cycle)
@@ -1864,11 +1878,10 @@ export const Reports: React.FC = () => {
                           key={wNum}
                           type="button"
                           onClick={() => setSelectedWeek(wNum)}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
-                            isSelected
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${isSelected
                               ? 'bg-blue-600 text-white shadow-xs'
                               : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-                          }`}
+                            }`}
                         >
                           Week {wNum}
                         </button>
@@ -1967,18 +1980,16 @@ export const Reports: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setWeeklyViewMode('section')}
-                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                    weeklyViewMode === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${weeklyViewMode === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                    }`}
                 >
                   Section-Wise View
                 </button>
                 <button
                   type="button"
                   onClick={() => setWeeklyViewMode('employee')}
-                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                    weeklyViewMode === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${weeklyViewMode === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                    }`}
                 >
                   Employee-Wise View
                 </button>
@@ -1994,18 +2005,16 @@ export const Reports: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setMonthlyViewMode('section')}
-                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                    monthlyViewMode === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${monthlyViewMode === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                    }`}
                 >
                   Section-Wise View
                 </button>
                 <button
                   type="button"
                   onClick={() => setMonthlyViewMode('employee')}
-                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                    monthlyViewMode === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                  }`}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${monthlyViewMode === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                    }`}
                 >
                   Employee-Wise View
                 </button>
@@ -2022,27 +2031,24 @@ export const Reports: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setAdvanceDimension('section')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      advanceDimension === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${advanceDimension === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Section-Wise
                   </button>
                   <button
                     type="button"
                     onClick={() => setAdvanceDimension('employee')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      advanceDimension === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${advanceDimension === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Employee-Wise
                   </button>
                   <button
                     type="button"
                     onClick={() => setAdvanceDimension('ref_agents')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      advanceDimension === 'ref_agents' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${advanceDimension === 'ref_agents' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Ref & Agents-Wise
                   </button>
@@ -2058,9 +2064,8 @@ export const Reports: React.FC = () => {
                         key={p}
                         type="button"
                         onClick={() => setAdvancePeriod(p)}
-                        className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${
-                          advancePeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${advancePeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
+                          }`}
                       >
                         {p}
                       </button>
@@ -2080,18 +2085,16 @@ export const Reports: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFoodDimension('section')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      foodDimension === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${foodDimension === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Section-Wise
                   </button>
                   <button
                     type="button"
                     onClick={() => setFoodDimension('employee')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      foodDimension === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${foodDimension === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Employee-Wise
                   </button>
@@ -2107,9 +2110,8 @@ export const Reports: React.FC = () => {
                         key={p}
                         type="button"
                         onClick={() => setFoodPeriod(p)}
-                        className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${
-                          foodPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${foodPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
+                          }`}
                       >
                         {p}
                       </button>
@@ -2130,9 +2132,8 @@ export const Reports: React.FC = () => {
                     key={p}
                     type="button"
                     onClick={() => setOverallPeriod(p)}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${
-                      overallPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${overallPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     {p === 'overall' ? 'Overall (Lifetime)' : p}
                   </button>
@@ -2150,27 +2151,24 @@ export const Reports: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setTransfersSubView('all')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      transfersSubView === 'all' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${transfersSubView === 'all' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     All Transfers &amp; Migrations
                   </button>
                   <button
                     type="button"
                     onClick={() => setTransfersSubView('site')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      transfersSubView === 'site' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${transfersSubView === 'site' ? 'bg-white text-indigo-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Site Transfers List
                   </button>
                   <button
                     type="button"
                     onClick={() => setTransfersSubView('section')}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                      transfersSubView === 'section' ? 'bg-white text-purple-600 shadow-2xs' : 'text-slate-600'
-                    }`}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${transfersSubView === 'section' ? 'bg-white text-purple-600 shadow-2xs' : 'text-slate-600'
+                      }`}
                   >
                     Section Transfers List
                   </button>
@@ -2186,9 +2184,8 @@ export const Reports: React.FC = () => {
                         key={p}
                         type="button"
                         onClick={() => setTransfersPeriod(p)}
-                        className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${
-                          transfersPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${transfersPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
+                          }`}
                       >
                         {p === 'all' ? 'All Time' : p}
                       </button>
@@ -2206,9 +2203,8 @@ export const Reports: React.FC = () => {
                       key={n}
                       type="button"
                       onClick={() => setTransfersNature(n)}
-                      className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${
-                        transfersNature === n ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600'
-                      }`}
+                      className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${transfersNature === n ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600'
+                        }`}
                     >
                       {n === 'all' ? 'All Types' : n}
                     </button>
@@ -2218,15 +2214,6 @@ export const Reports: React.FC = () => {
             </div>
           )}
 
-          {/* Export Shortcut on right side of toolbar */}
-          <button
-            type="button"
-            onClick={() => setIsExportModalOpen(true)}
-            className="ml-auto inline-flex items-center space-x-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Export Table &amp; Custom Audit to Image &amp; PDF &rarr;</span>
-          </button>
         </div>
       </div>
 
@@ -2243,7 +2230,6 @@ export const Reports: React.FC = () => {
               </span>
               <h2 className="text-lg sm:text-xl font-black text-slate-900">{activeRepDef.name}</h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1">{activeRepDef.desc}</p>
           </div>
         </div>
 
@@ -2259,35 +2245,17 @@ export const Reports: React.FC = () => {
               <span>+ New Transfer</span>
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={() => setIsCustomSlipPickerOpen(true)}
-            className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer"
-            title="Open Custom Worker Audit Slip"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            <span>Worker Custom Slip</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsExportModalOpen(true)}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-2 shadow-xs transition-all active:scale-95 cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Export Image &amp; PDF</span>
-          </button>
         </div>
       </div>
 
       {/* ============================================================= */}
       {/* 1. DAILY ATTENDANCE REPORT (SECTION-WISE) */}
       {/* ============================================================= */}
+      <div className="w-full">
       {activeReport === 'daily-attendance-section' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
+          <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-base font-black text-slate-900">
                   Daily Section Attendance &amp; Overtime Roll ({dateFilterMode === 'custom' ? `${customStartDate} to ${customEndDate}` : selectedDate})
@@ -2296,6 +2264,14 @@ export const Reports: React.FC = () => {
                   Section headcounts, present mandays, food eligibility, and worker drilldowns with Custom Audit Slips.
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={handleDownloadReportImage}
+                className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download</span>
+              </button>
             </div>
 
             <DataTable
@@ -2336,13 +2312,12 @@ export const Reports: React.FC = () => {
                   header: 'Present Rate',
                   render: (d) => (
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                        Number(d.attendanceRate) >= 80
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${Number(d.attendanceRate) >= 80
                           ? 'bg-emerald-50 text-emerald-700'
                           : Number(d.attendanceRate) >= 50
-                          ? 'bg-amber-50 text-amber-700'
-                          : 'bg-rose-50 text-rose-700'
-                      }`}
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-rose-50 text-rose-700'
+                        }`}
                     >
                       {d.attendanceRate}%
                     </span>
@@ -2432,11 +2407,10 @@ export const Reports: React.FC = () => {
                               </td>
                               <td className="p-2.5">
                                 <span
-                                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                                    wRow.foodEligible.includes('Meal')
+                                  className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${wRow.foodEligible.includes('Meal')
                                       ? 'bg-emerald-50 text-emerald-700'
                                       : 'bg-slate-100 text-slate-400'
-                                  }`}
+                                    }`}
                                 >
                                   {wRow.foodEligible}
                                 </span>
@@ -2469,8 +2443,8 @@ export const Reports: React.FC = () => {
       {/* 2. WEEKLY ATTENDANCE REPORT (SECTION & EMPLY WISE) */}
       {/* ============================================================= */}
       {activeReport === 'weekly-attendance' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Weekly Attendance &amp; Wage Accrual Roll &bull; {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : activeWeekInfo.label}
@@ -2481,6 +2455,14 @@ export const Reports: React.FC = () => {
                   : 'Individual employee-wise muster roll with day-by-day P/H/A flags, and Custom Audit Slips.'}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleDownloadReportImage}
+              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
           </div>
 
           {weeklyViewMode === 'section' ? (
@@ -2589,8 +2571,8 @@ export const Reports: React.FC = () => {
                           status === 'present'
                             ? 'bg-emerald-500 text-white'
                             : status === 'halfDay'
-                            ? 'bg-amber-500 text-white'
-                            : 'bg-rose-500 text-white';
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-rose-500 text-white';
                         return (
                           <span
                             key={dateStr}
@@ -2654,8 +2636,8 @@ export const Reports: React.FC = () => {
       {/* 3. MONTHLY ATTENDANCE REPORT (SECTION & EMPLY WISE) */}
       {/* ============================================================= */}
       {activeReport === 'monthly-attendance' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Monthly Attendance Master Roll &bull; {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : selectedMonth}
@@ -2666,6 +2648,14 @@ export const Reports: React.FC = () => {
                   : 'Individual employee monthly muster roll with daily wage rates, mandays, and Custom Audit Slips.'}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleDownloadReportImage}
+              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
           </div>
 
           {monthlyViewMode === 'section' ? (
@@ -2805,8 +2795,8 @@ export const Reports: React.FC = () => {
       {/* 4. ADVANCE PAYMENT REPORT (MULTI-DIMENSION & PERIOD) */}
       {/* ============================================================= */}
       {activeReport === 'advance-payments' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Advance Payment, Recovery &amp; Debt Ledger &bull;{' '}
@@ -2817,6 +2807,14 @@ export const Reports: React.FC = () => {
                 Audited cash advances, daily wage recovery cuts, running balances, and Custom Audit Slips.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleDownloadReportImage}
+              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
           </div>
 
           {advanceDimension === 'section' && (
@@ -2959,8 +2957,8 @@ export const Reports: React.FC = () => {
       {/* 5. FOOD REPORT (SECTION-WISE, EMPLY-WISE, MULTI-PERIOD) */}
       {/* ============================================================= */}
       {activeReport === 'food-report' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Food &amp; Canteen Distribution Audit &bull;{' '}
@@ -2971,6 +2969,14 @@ export const Reports: React.FC = () => {
                 Meal quantities derived strictly from attendance (Present = 1.0 unit, Half Day = 0.5 unit, Absent = 0).
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleDownloadReportImage}
+              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
           </div>
 
           {foodDimension === 'section' ? (
@@ -3047,9 +3053,8 @@ export const Reports: React.FC = () => {
                   header: 'Eligibility',
                   render: (d) => (
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        d.isEligible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'
-                      }`}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${d.isEligible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'
+                        }`}
                     >
                       {d.isEligible ? 'Eligible' : 'Not Eligible'}
                     </span>
@@ -3083,8 +3088,8 @@ export const Reports: React.FC = () => {
       {/* 6. OVERALL REPORTS (EMPLOYEE-WISE 360° MASTER DOSSIER) */}
       {/* ============================================================= */}
       {activeReport === 'overall-reports' && (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-black text-slate-900">
                 Master 360° Employee Dossier &bull;{' '}
@@ -3094,6 +3099,14 @@ export const Reports: React.FC = () => {
                 Consolidated worker audit uniting Attendance (P/H/A), Food Meals, Gross Wages, Advance Deductions, and Custom Audit Slips.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleDownloadReportImage}
+              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
           </div>
 
           <DataTable
@@ -3135,11 +3148,10 @@ export const Reports: React.FC = () => {
                         d.workingSitesList.map((st) => (
                           <span
                             key={st.siteId}
-                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
-                              st.isOriginal
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${st.isOriginal
                                 ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
                                 : 'bg-blue-50 text-blue-900 border-blue-200'
-                            }`}
+                              }`}
                           >
                             <MapPin className="h-2.5 w-2.5 text-blue-600 shrink-0" />
                             <span>{st.siteName}</span>
@@ -3297,8 +3309,8 @@ export const Reports: React.FC = () => {
           </div>
 
           {/* Transfers Table Card */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <ArrowRightLeft className="h-5 w-5 text-blue-600" />
@@ -3306,8 +3318,8 @@ export const Reports: React.FC = () => {
                     {transfersSubView === 'site'
                       ? 'Cross-Site Transfers Register'
                       : transfersSubView === 'section'
-                      ? 'Section Craft Transfers Register'
-                      : 'Comprehensive Employees Transfers & Migrations Register'}
+                        ? 'Section Craft Transfers Register'
+                        : 'Comprehensive Employees Transfers & Migrations Register'}
                   </span>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                     {transfersReportData.activeList.length} records
@@ -3319,6 +3331,14 @@ export const Reports: React.FC = () => {
                     : `Active scope: ${transfersPeriod.toUpperCase()} cycle • Nature: ${transfersNature.toUpperCase()}`}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={handleDownloadReportImage}
+                className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download</span>
+              </button>
             </div>
 
             {/* DataTable */}
@@ -3358,11 +3378,10 @@ export const Reports: React.FC = () => {
                           )}
                           {w?.workerType && (
                             <span
-                              className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border ${
-                                w.workerType === 'company'
+                              className={`text-[9px] px-1.5 py-0.2 rounded font-semibold border ${w.workerType === 'company'
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
                                   : 'bg-amber-50 text-amber-700 border-amber-200/60'
-                              }`}
+                                }`}
                             >
                               {w.workerType === 'company' ? 'Company' : 'Outside'}
                             </span>
@@ -3378,11 +3397,10 @@ export const Reports: React.FC = () => {
                     const isSiteTransfer = m.fromSiteId !== m.toSiteId;
                     return (
                       <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                          isSiteTransfer
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${isSiteTransfer
                             ? 'bg-blue-50 text-blue-700 border-blue-200'
                             : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                        }`}
+                          }`}
                       >
                         {isSiteTransfer ? (
                           <>
@@ -3441,11 +3459,10 @@ export const Reports: React.FC = () => {
                   header: 'Scope',
                   render: (m) => (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                        m.migrationType === 'permanent'
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${m.migrationType === 'permanent'
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-amber-100 text-amber-800 border border-amber-300'
-                      }`}
+                        }`}
                     >
                       {m.migrationType}
                     </span>
@@ -3495,6 +3512,8 @@ export const Reports: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
+      </div>
 
       {/* ============================================================= */}
       {/* CUSTOM WORKER AUDIT SLIP PICKER MODAL (TOP HEADER LAUNCHER) */}
@@ -3642,19 +3661,19 @@ export const Reports: React.FC = () => {
             dateFilterMode === 'custom'
               ? customStartDate
               : activeReport === 'daily-attendance-section'
-              ? selectedDate
-              : activeReport === 'weekly-attendance'
-              ? activeWeekInfo.startDate
-              : customSlipStartDate
+                ? selectedDate
+                : activeReport === 'weekly-attendance'
+                  ? activeWeekInfo.startDate
+                  : customSlipStartDate
           }
           initialEndDate={
             dateFilterMode === 'custom'
               ? customEndDate
               : activeReport === 'daily-attendance-section'
-              ? selectedDate
-              : activeReport === 'weekly-attendance'
-              ? activeWeekInfo.endDate
-              : customSlipEndDate
+                ? selectedDate
+                : activeReport === 'weekly-attendance'
+                  ? activeWeekInfo.endDate
+                  : customSlipEndDate
           }
           allAttendance={attendance}
           allAdvances={advances}
@@ -3681,6 +3700,7 @@ export const Reports: React.FC = () => {
         tableRows={exportPayload.tableRows}
         signatures={exportPayload.signatures}
         customAuditDetails={exportPayload.customAuditDetails}
+        reportRef={reportRef}
       />
 
       {/* Reports Directory Modal */}
@@ -3702,9 +3722,8 @@ export const Reports: React.FC = () => {
         onSuccess={(msg) => showToast(msg)}
       />
 
-      {/* Toast Notification */}
       {toastMessage && <Toast message={toastMessage} type="success" onClose={() => setToastMessage(null)} />}
-    </div>
+    </>
   );
 };
 

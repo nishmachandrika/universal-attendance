@@ -578,8 +578,8 @@ export function exportSectionMealSummaryAsPDF({
           </thead>
           <tbody>
             ${mealRows
-              .map(
-                (r) => `
+      .map(
+        (r) => `
               <tr>
                 <td class="bold">${r.label}</td>
                 <td>${r.time}</td>
@@ -594,8 +594,8 @@ export function exportSectionMealSummaryAsPDF({
                 </td>
               </tr>
             `
-              )
-              .join('')}
+      )
+      .join('')}
             <tr class="totals-row">
               <td colspan="3">DAILY TOTAL SUMMARY (3 SESSIONS)</td>
               <td style="text-align: right; font-family: monospace;">${totalOrdered}</td>

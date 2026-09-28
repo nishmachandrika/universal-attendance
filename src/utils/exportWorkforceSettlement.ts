@@ -704,16 +704,15 @@ export async function exportWorkforceSettlementAsPDF({
             <div class="kpi-label">Outstanding Debt</div>
             <div class="kpi-val" style="color: #d97706;">₹${(overallOutstandingDebt ?? settlement.outstandingAdvance).toLocaleString()}</div>
           </div>
-          ${
-            overallClosingBalance !== undefined
-              ? `
+          ${overallClosingBalance !== undefined
+      ? `
           <div class="kpi-card" style="background: #d1fae5; border: 2px solid #059669;">
             <div class="kpi-label" style="color: #065f46; font-weight: 800;">OVERALL CLOSING BALANCE</div>
             <div class="kpi-val" style="color: #047857; font-size: 20px;">₹${overallClosingBalance.toLocaleString()}</div>
             <div style="font-size: 9px; color: #047857; font-weight: 700; margin-top: 2px;">★ Lifetime Account Balance</div>
           </div>`
-              : ''
-          }
+      : ''
+    }
         </div>
 
         <h3 class="sec-title">1. Weekly Muster & Summary Breakdown</h3>
@@ -731,8 +730,8 @@ export async function exportWorkforceSettlementAsPDF({
           </thead>
           <tbody>
             ${weeklyData
-              .map(
-                (w) => `
+      .map(
+        (w) => `
               <tr>
                 <td><strong>Week ${w.weekNumber}</strong></td>
                 <td style="font-family: monospace;">${w.dateRange}</td>
@@ -743,8 +742,8 @@ export async function exportWorkforceSettlementAsPDF({
                 <td style="text-align: right; font-family: monospace; color: #059669; font-weight: 800;">₹${w.weeklyRunningBalance.toLocaleString()}</td>
               </tr>
             `
-              )
-              .join('')}
+      )
+      .join('')}
           </tbody>
         </table>
 
@@ -760,9 +759,8 @@ export async function exportWorkforceSettlementAsPDF({
           </div>
         </div>
 
-        ${
-          workingPlacesBreakdown && workingPlacesBreakdown.length > 0
-            ? `
+        ${workingPlacesBreakdown && workingPlacesBreakdown.length > 0
+      ? `
           <h3 class="sec-title">3. Working Places Deployment &amp; Food Meals Breakdown (Original &amp; Other Sites)</h3>
           <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px; margin-bottom: 8px;">
@@ -773,9 +771,9 @@ export async function exportWorkforceSettlementAsPDF({
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               ${workingPlacesBreakdown
-                .map(
-                  (wp) =>
-                    `<div style="background: #ffffff; border: 1px solid ${wp.isOriginalSite ? '#86efac' : '#93c5fd'}; padding: 6px 12px; border-radius: 6px; font-size: 11px;">
+        .map(
+          (wp) =>
+            `<div style="background: #ffffff; border: 1px solid ${wp.isOriginalSite ? '#86efac' : '#93c5fd'}; padding: 6px 12px; border-radius: 6px; font-size: 11px;">
                       <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; background: ${wp.isOriginalSite ? '#dcfce7' : '#dbeafe'}; color: ${wp.isOriginalSite ? '#15803d' : '#1d4ed8'}; padding: 1px 6px; border-radius: 4px;">
                           ${wp.isOriginalSite ? '🏠 Original Site' : '🌐 Other Site'}
@@ -788,16 +786,15 @@ export async function exportWorkforceSettlementAsPDF({
                         <span style="color: #b45309; font-weight: 800;">🍽️ Food Count: ${wp.foodCount !== undefined ? wp.foodCount : wp.daysCount} Meals</span>
                       </div>
                     </div>`
-                )
-                .join('')}
+        )
+        .join('')}
             </div>
           </div>`
-            : ''
-        }
+      : ''
+    }
 
-        ${
-          transfersHistory && transfersHistory.length > 0
-            ? `
+        ${transfersHistory && transfersHistory.length > 0
+      ? `
           <h3 class="sec-title">Transfer &amp; Migration History (Site &amp; Section Movements)</h3>
           <table style="margin-bottom: 16px;">
             <thead>
@@ -812,14 +809,13 @@ export async function exportWorkforceSettlementAsPDF({
             </thead>
             <tbody>
               ${transfersHistory
-                .map(
-                  (tr) => `
+        .map(
+          (tr) => `
                 <tr>
                   <td style="font-family: monospace; font-weight: 700;">${tr.date}</td>
                   <td>
-                    <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; background: ${
-                      tr.type === 'site' ? '#dbeafe' : '#e0e7ff'
-                    }; color: ${tr.type === 'site' ? '#1d4ed8' : '#4338ca'};">
+                    <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; background: ${tr.type === 'site' ? '#dbeafe' : '#e0e7ff'
+            }; color: ${tr.type === 'site' ? '#1d4ed8' : '#4338ca'};">
                       ${tr.type === 'site' ? '🏢 Site Transfer' : '🔀 Section Shift'}
                     </span>
                   </td>
@@ -829,12 +825,12 @@ export async function exportWorkforceSettlementAsPDF({
                   <td>${tr.reason} <small style="color: #64748b;">(Approved By: ${tr.approvedBy}${tr.remarks ? ` • ${tr.remarks}` : ''})</small></td>
                 </tr>
               `
-                )
-                .join('')}
+        )
+        .join('')}
             </tbody>
           </table>`
-            : ''
-        }
+      : ''
+    }
 
         <h3 class="sec-title">Advance Payments &amp; Recoveries Log With Dates</h3>
         <table>
@@ -848,13 +844,12 @@ export async function exportWorkforceSettlementAsPDF({
             </tr>
           </thead>
           <tbody>
-            ${
-              monthAdvances.length === 0 && monthRecoveries.length === 0
-                ? '<tr><td colspan="5" style="text-align: center; color: #64748b;">No advance or recovery transactions recorded this month.</td></tr>'
-                : `
+            ${monthAdvances.length === 0 && monthRecoveries.length === 0
+      ? '<tr><td colspan="5" style="text-align: center; color: #64748b;">No advance or recovery transactions recorded this month.</td></tr>'
+      : `
                 ${monthAdvances
-                  .map(
-                    (a) => `
+        .map(
+          (a) => `
                   <tr>
                     <td style="font-family: monospace; font-weight: 700;">${a.date}</td>
                     <td style="color: #e11d48; font-weight: 700;">Advance Issued</td>
@@ -863,11 +858,11 @@ export async function exportWorkforceSettlementAsPDF({
                     <td>${a.reason || 'Salary advance'}</td>
                   </tr>
                 `
-                  )
-                  .join('')}
+        )
+        .join('')}
                 ${monthRecoveries
-                  .map(
-                    (r) => `
+        .map(
+          (r) => `
                   <tr>
                     <td style="font-family: monospace; font-weight: 700;">${r.date}</td>
                     <td style="color: #059669; font-weight: 700;">Advance Deduction</td>
@@ -876,10 +871,10 @@ export async function exportWorkforceSettlementAsPDF({
                     <td>${r.remarks || 'Salary recovery'}</td>
                   </tr>
                 `
-                  )
-                  .join('')}
+        )
+        .join('')}
               `
-            }
+    }
           </tbody>
         </table>
 
@@ -1090,8 +1085,8 @@ export function computeWorkerMonthlyAudit({
   const lastPresentRunningBalance = Math.max(
     0,
     (earnedUpToLastPresent || settlement.grossWage) -
-      (deductionsUpToLastPresent || settlement.advanceRecovery) -
-      paidUpToLastPresent
+    (deductionsUpToLastPresent || settlement.advanceRecovery) -
+    paidUpToLastPresent
   );
 
   const originalSiteId = worker.currentSiteId || 'default';
