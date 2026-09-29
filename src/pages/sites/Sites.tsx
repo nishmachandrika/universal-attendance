@@ -11,6 +11,7 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { StatCard } from '../../components/common/StatCard';
 import { Toast } from '../../components/common/Toast';
 import { WorkerAttendanceModal } from '../../components/attendance/WorkerAttendanceModal';
+import { WorkerCheckOutModal } from '../../components/attendance/WorkerCheckOutModal';
 import { NewEmployeeJoiningModal } from '../../components/sections/NewEmployeeJoiningModal';
 import { EditEmployeeModal } from '../../components/sections/EditEmployeeModal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
@@ -36,6 +37,7 @@ import {
   Phone,
   LayoutGrid,
   List,
+  Check,
 } from 'lucide-react';
 export { SiteDetails } from './SiteDetails';
 
@@ -107,6 +109,7 @@ export const Sites: React.FC = () => {
 
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [selectedWorkerForAttendance, setSelectedWorkerForAttendance] = useState<Worker | null>(null);
+  const [selectedWorkerForCheckOut, setSelectedWorkerForCheckOut] = useState<Worker | null>(null);
   const [previewPhotoModal, setPreviewPhotoModal] = useState<string | null>(null);
 
   // Form states - Add Site
@@ -1503,26 +1506,53 @@ export const Sites: React.FC = () => {
                 },
                 {
                   header: 'Actions',
-                  render: (row) => (
-                    <div className="flex items-center space-x-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedWorkerForAttendance(row)}
-                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
-                        title="Record Face ID, Fingerprint, or Manual Attendance"
-                      >
-                        <CalendarCheck className="h-3.5 w-3.5" />
-                        <span>Check In</span>
-                      </button>
-                      <Link
-                        to={`/workers/${row.id}`}
-                        className="p-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors inline-flex items-center justify-center"
-                        title="View Worker 360 Profile"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Link>
-                      {currentUser?.role === 'admin' && (
-                        <>
+                  render: (row) => {
+                    const rec = attendance.find((a) => a.workerId === row.id && a.date === attendanceDate);
+                    const hasCheckedIn = !!(rec && rec.checkIn);
+                    const hasCheckedOut = !!(rec && rec.checkOut);
+
+                    return (
+                      <div className="flex items-center space-x-1.5">
+                        {!hasCheckedOut && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWorkerForAttendance(row)}
+                            className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                            title="Record Face ID, Fingerprint, or Manual Attendance"
+                          >
+                            <CalendarCheck className="h-3.5 w-3.5" />
+                            <span>Check In</span>
+                          </button>
+                        )}
+
+                        {hasCheckedIn && !hasCheckedOut && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedWorkerForCheckOut(row)}
+                            className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                            title="Record Check-Out"
+                          >
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>Check Out</span>
+                          </button>
+                        )}
+
+                        {hasCheckedIn && hasCheckedOut && (
+                          <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center space-x-1">
+                            <Check className="h-3.5 w-3.5" />
+                            <span>Completed</span>
+                          </span>
+                        )}
+
+                        <Link
+                          to={`/workers/${row.id}`}
+                          className="p-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors inline-flex items-center justify-center"
+                          title="View Worker 360 Profile"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Link>
+                        {currentUser?.role === 'admin' && (
+                          <>
                           <button
                             type="button"
                             onClick={() => {
@@ -1545,9 +1575,10 @@ export const Sites: React.FC = () => {
                         </>
                       )}
                     </div>
-                  ),
+                  );
                 },
-              ]}
+              },
+            ]}
             />
           </div>
         </div>
@@ -1572,6 +1603,22 @@ export const Sites: React.FC = () => {
         />
       )}
 
+      {/* WORKER CHECK-OUT MODAL */}
+      {selectedWorkerForCheckOut && (
+        <WorkerCheckOutModal
+          isOpen={!!selectedWorkerForCheckOut}
+          onClose={() => setSelectedWorkerForCheckOut(null)}
+          worker={selectedWorkerForCheckOut}
+          workers={workers}
+          section={selectedSection || undefined}
+          site={selectedSite || undefined}
+          allowSiteSelection={false}
+          onSuccess={(wName, msg) => {
+            setToastMessage(`Check-out for ${wName} recorded successfully: ${msg}`);
+            setSelectedWorkerForCheckOut(null);
+          }}
+        />
+      )}
       {/* NEW EMPLOYEE JOINING MODAL */}
       {showAddEmployeeModal && (
         <NewEmployeeJoiningModal

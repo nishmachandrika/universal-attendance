@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAttendanceContext } from '../../context/AttendanceContext';
 import type { Worker } from '../../types';
 import { WorkerAttendanceModal } from '../../components/attendance/WorkerAttendanceModal';
+import { WorkerCheckOutModal } from '../../components/attendance/WorkerCheckOutModal';
 import { NewEmployeeJoiningModal } from '../../components/sections/NewEmployeeJoiningModal';
 import { StatCard } from '../../components/common/StatCard';
 import { StatusBadge } from '../../components/common/StatusBadge';
@@ -25,6 +26,7 @@ import {
   Clock,
   UserPlus,
   Trash2,
+  Check,
 } from 'lucide-react';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { EditEmployeeModal } from '../../components/sections/EditEmployeeModal';
@@ -60,6 +62,7 @@ export const SectionDetails: React.FC = () => {
 
   // Attendance Modal & Photo Preview State
   const [selectedWorkerForAttendance, setSelectedWorkerForAttendance] = useState<Worker | null>(null);
+  const [selectedWorkerForCheckOut, setSelectedWorkerForCheckOut] = useState<Worker | null>(null);
   const [previewPhotoModal, setPreviewPhotoModal] = useState<string | null>(null);
 
   // Edit State
@@ -404,49 +407,78 @@ export const SectionDetails: React.FC = () => {
               },
               {
                 header: 'Action',
-                render: (row) => (
-                  <div className="flex items-center space-x-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedWorkerForAttendance(row)}
-                      className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
-                      title="Record Face ID, Fingerprint, or Manual Attendance"
-                    >
-                      <CalendarCheck className="h-3.5 w-3.5" />
-                      <span>Check In</span>
-                    </button>
-                    <Link
-                      to={`/workers/${row.id}`}
-                      className="p-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors inline-flex items-center justify-center"
-                      title="View Worker 360 Profile"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Link>
-                    {currentUser?.role === 'admin' && (
-                      <>
+                render: (row) => {
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const todayRecord = attendance.find((a) => a.workerId === row.id && a.date === todayStr);
+                  const hasCheckedIn = !!(todayRecord && todayRecord.checkIn);
+                  const hasCheckedOut = !!(todayRecord && todayRecord.checkOut);
+
+                  return (
+                    <div className="flex items-center space-x-1.5">
+                      {!hasCheckedOut && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingWorker(row);
-                            setShowEditWorkerModal(true);
-                          }}
-                          className="p-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
-                          title="Edit Employee"
+                          onClick={() => setSelectedWorkerForAttendance(row)}
+                          className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                          title="Record Face ID, Fingerprint, or Manual Attendance"
                         >
-                          <Edit3 className="h-3.5 w-3.5" />
+                          <CalendarCheck className="h-3.5 w-3.5" />
+                          <span>Check In</span>
                         </button>
+                      )}
+
+                      {hasCheckedIn && !hasCheckedOut && (
                         <button
                           type="button"
-                          onClick={() => setWorkerToDelete(row)}
-                          className="p-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
-                          title="Delete Employee"
+                          onClick={() => setSelectedWorkerForCheckOut(row)}
+                          className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                          title="Record Check-Out"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>Check Out</span>
                         </button>
-                      </>
-                    )}
-                  </div>
-                ),
+                      )}
+
+                      {hasCheckedIn && hasCheckedOut && (
+                        <span className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center space-x-1">
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Completed</span>
+                        </span>
+                      )}
+
+                      <Link
+                        to={`/workers/${row.id}`}
+                        className="p-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors inline-flex items-center justify-center"
+                        title="View Worker 360 Profile"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Link>
+                      {currentUser?.role === 'admin' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingWorker(row);
+                              setShowEditWorkerModal(true);
+                            }}
+                            className="p-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
+                            title="Edit Employee"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWorkerToDelete(row)}
+                            className="p-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            title="Delete Employee"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                },
               },
             ]}
           />
@@ -513,6 +545,21 @@ export const SectionDetails: React.FC = () => {
           isOpen={!!selectedWorkerForAttendance}
           onClose={() => setSelectedWorkerForAttendance(null)}
           worker={selectedWorkerForAttendance}
+          section={section}
+          site={parentSite || null}
+          onSuccess={(workerName, message) => {
+            setToastMessage(`✓ ${workerName}: ${message}`);
+          }}
+        />
+      )}
+
+      {/* WORKER CHECK-OUT MODAL */}
+      {selectedWorkerForCheckOut && (
+        <WorkerCheckOutModal
+          isOpen={!!selectedWorkerForCheckOut}
+          onClose={() => setSelectedWorkerForCheckOut(null)}
+          worker={selectedWorkerForCheckOut}
+          workers={sectionWorkers}
           section={section}
           site={parentSite || null}
           onSuccess={(workerName, message) => {
