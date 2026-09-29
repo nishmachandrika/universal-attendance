@@ -25,6 +25,29 @@ import {
   UserPlus,
 } from 'lucide-react';
 
+const MiniStatCard = ({ title, value, icon, description }: { title: string; value: string | number; icon?: React.ReactNode; description?: string }) => (
+  <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-slate-300/90 transition-all duration-200 flex items-start justify-between group h-full">
+    <div className="min-w-0 flex-1 pr-2 flex flex-col justify-center">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate" title={title}>
+        {title}
+      </p>
+      <p className="mt-1 text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">
+        {value}
+      </p>
+      {description && (
+        <p className="mt-1 text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2" title={description}>
+          {description}
+        </p>
+      )}
+    </div>
+    {icon && (
+      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50/80 border border-blue-100 flex items-center justify-center flex-shrink-0 shadow-xs group-hover:scale-105 transition-all duration-200 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ml-1">
+        {icon}
+      </div>
+    )}
+  </div>
+);
+
 export const OpeningEmployees: React.FC = () => {
   const navigate = useNavigate();
   const { workers, sites, sections, currentUser, deleteWorker } = useAttendanceContext();
@@ -338,31 +361,31 @@ export const OpeningEmployees: React.FC = () => {
 
       {/* 5 KPI Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        <StatCard
+        <MiniStatCard
           title="Configured Workers"
           value={`${configuredCount} / ${totalWorkers}`}
           icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
           description={`${pendingCount} pending setup`}
         />
-        <StatCard
+        <MiniStatCard
           title="Prior Mandays Migrated"
           value={`${totalPriorDays} Days`}
           icon={<Clock className="h-5 w-5 text-indigo-600" />}
           description="Cumulative duty before cutoff"
         />
-        <StatCard
+        <MiniStatCard
           title="Old Advances Carried"
           value={`₹${totalOldAdvances.toLocaleString()}`}
           icon={<TrendingDown className="h-5 w-5 text-rose-600" />}
           description="Total recoverable debt"
         />
-        <StatCard
+        <MiniStatCard
           title="Old Pending Wages"
           value={`₹${totalOldPendingWages.toLocaleString()}`}
           icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
           description="Unpaid historical dues"
         />
-        <StatCard
+        <MiniStatCard
           title="Net Opening Balance"
           value={`₹${Math.abs(netOpeningTotal).toLocaleString()}`}
           icon={<DollarSign className="h-5 w-5 text-teal-600" />}

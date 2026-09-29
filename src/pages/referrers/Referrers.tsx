@@ -895,51 +895,51 @@ export const Referrers: React.FC = () => {
       </div>
 
       {/* KPI Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs h-full flex flex-col justify-center group hover:shadow-sm transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Commission</span>
-            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-              <Coins className="h-4 w-4" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">Total Commission</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:scale-105 transition-all">
+              <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-black text-slate-900 mt-2">₹{totals.commission.toLocaleString('en-IN')}</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+          <p className="text-lg sm:text-xl font-black text-slate-900 mt-1 truncate">₹{totals.commission.toLocaleString('en-IN')}</p>
+          <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
             Agencies: ₹{totals.agencyCommission.toLocaleString('en-IN')} • Senior Emps: ₹{totals.seniorCommission.toLocaleString('en-IN')}
           </p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs h-full flex flex-col justify-center group hover:shadow-sm transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Used / Paid Out</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">Used / Paid Out</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-all">
+              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-black text-emerald-700 mt-2">₹{totals.used.toLocaleString('en-IN')}</p>
-          <p className="text-[11px] text-emerald-600 mt-0.5">Disbursed to agents & senior workers</p>
+          <p className="text-lg sm:text-xl font-black text-emerald-700 mt-1 truncate">₹{totals.used.toLocaleString('en-IN')}</p>
+          <p className="text-[10px] text-emerald-600 mt-1 line-clamp-2 leading-relaxed">Disbursed to agents & senior workers</p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs h-full flex flex-col justify-center group hover:shadow-sm transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Request Amount</span>
-            <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-              <Clock className="h-4 w-4" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">Request Amount</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-amber-50 text-amber-600 group-hover:scale-105 transition-all">
+              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-black text-amber-700 mt-2">₹{totals.requested.toLocaleString('en-IN')}</p>
-          <p className="text-[11px] text-amber-600 mt-0.5">In pending / processing</p>
+          <p className="text-lg sm:text-xl font-black text-amber-700 mt-1 truncate">₹{totals.requested.toLocaleString('en-IN')}</p>
+          <p className="text-[10px] text-amber-600 mt-1 line-clamp-2 leading-relaxed">In pending / processing</p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs h-full flex flex-col justify-center group hover:shadow-sm transition-all duration-200">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Closing Balance</span>
-            <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
-              <Wallet className="h-4 w-4" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider truncate">Closing Balance</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-indigo-50 text-indigo-600 group-hover:scale-105 transition-all">
+              <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="text-xl font-black text-blue-700 mt-2">₹{totals.closing.toLocaleString('en-IN')}</p>
-          <p className="text-[11px] text-blue-600 mt-0.5">Available for payment request</p>
+          <p className="text-lg sm:text-xl font-black text-blue-700 mt-1 truncate">₹{totals.closing.toLocaleString('en-IN')}</p>
+          <p className="text-[10px] text-blue-600 mt-1 line-clamp-2 leading-relaxed">Available for payment request</p>
         </div>
       </div>
 

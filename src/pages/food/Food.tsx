@@ -26,6 +26,29 @@ import {
   exportSectionMealSummaryAsPDF,
 } from '../../utils/exportMealSummary';
 
+const FoodMiniStatCard = ({ title, value, icon, description }: { title: string; value: string | number; icon?: React.ReactNode; description?: string }) => (
+  <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-slate-300/90 transition-all duration-200 flex items-start justify-between group h-full">
+    <div className="min-w-0 flex-1 pr-2 flex flex-col justify-center">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate" title={title}>
+        {title}
+      </p>
+      <p className="mt-1 text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight truncate">
+        {value}
+      </p>
+      {description && (
+        <p className="mt-1 text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-2" title={description}>
+          {description}
+        </p>
+      )}
+    </div>
+    {icon && (
+      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50/80 border border-blue-100 flex items-center justify-center flex-shrink-0 shadow-xs group-hover:scale-105 transition-all duration-200 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5 ml-1">
+        {icon}
+      </div>
+    )}
+  </div>
+);
+
 export const Food: React.FC = () => {
   const {
     workers,
@@ -233,25 +256,25 @@ export const Food: React.FC = () => {
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 print:hidden">
-        <StatCard
+        <FoodMiniStatCard
           title="Total Meals Indented"
           value={`${totalMealsOrderedToday} meals`}
           icon={<Utensils className="h-5 w-5 text-blue-600" />}
           description={`Today (${filterDate}) across all sessions`}
         />
-        <StatCard
+        <FoodMiniStatCard
           title="Kitchen Packing"
           value={`${ordersInPacking} indents`}
           icon={<Package className="h-5 w-5 text-amber-600" />}
           description="Being packed in hot boxes"
         />
-        <StatCard
+        <FoodMiniStatCard
           title="Sent to Sections"
           value={`${ordersDispatched} orders`}
           icon={<Truck className="h-5 w-5 text-blue-600 animate-pulse" />}
           description="En-route via site vehicles"
         />
-        <StatCard
+        <FoodMiniStatCard
           title="Received & Verified"
           value={`${ordersReceived} sessions`}
           icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
