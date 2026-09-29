@@ -184,7 +184,7 @@ export const SiteLogin: React.FC = () => {
           </div>
           <div>
             <span className="font-black text-white text-base sm:text-lg tracking-tight block">
-              Univarsal Attandance
+              Universal Attendance
             </span>
             <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase block">
               Multi-Site Workforce Portal
@@ -575,7 +575,7 @@ export const SiteLogin: React.FC = () => {
 
       {/* FOOTER */}
       <div className="max-w-6xl mx-auto w-full py-4 border-t border-white/10 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 relative z-10">
-        <span>Univarsal Attandance &bull; Multi-Site Worker Attendance &amp; Wage Management System</span>
+        <span>Universal Attendance &bull; Multi-Site Worker Attendance &amp; Wage Management System</span>
         <div className="flex items-center space-x-2">
           <span>Public Link:</span>
           <a

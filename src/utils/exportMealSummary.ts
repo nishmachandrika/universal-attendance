@@ -56,7 +56,7 @@ export async function exportSectionMealSummaryAsImage({
   // Company Brand
   ctx.fillStyle = '#f59e0b'; // amber-500
   ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-  ctx.fillText('UNIVARSAL ATTANDANCE', 40, 45);
+  ctx.fillText('UNIVERSAL ATTENDANCE', 40, 45);
 
   ctx.fillStyle = '#94a3b8'; // slate-400
   ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
@@ -275,7 +275,7 @@ export async function exportSectionMealSummaryAsImage({
   ctx.fillText('✓ DIGITAL RECORD CERTIFIED', width - 300, footerY + 50);
   ctx.fillStyle = '#64748b';
   ctx.font = '10px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Univarsal Attandance Audit Trail', width - 300, footerY + 70);
+  ctx.fillText('Universal Attendance Audit Trail', width - 300, footerY + 70);
 
   // Trigger Download
   const dataUrl = canvas.toDataURL('image/png');
@@ -526,7 +526,7 @@ export function exportSectionMealSummaryAsPDF({
 
         <div class="header-banner">
           <div>
-            <div class="brand-title">UNIVARSAL ATTANDANCE</div>
+            <div class="brand-title">UNIVERSAL ATTENDANCE</div>
             <div class="brand-subtitle">MULTI-SITE WORKFORCE & CANTEEN FOOD MANAGEMENT SYSTEM</div>
           </div>
           <div class="doc-badge">
@@ -620,7 +620,7 @@ export function exportSectionMealSummaryAsPDF({
             </div>
           </div>
           <div style="text-align: right; font-size: 11px; color: #059669; font-weight: bold;">
-            ✓ UNIVARSAL ATTANDANCE VERIFIED<br/>
+            ✓ UNIVERSAL ATTENDANCE VERIFIED<br/>
             <span style="font-size: 9px; color: #94a3b8; font-weight: normal;">Tamper-proof field delivery slip</span>
           </div>
         </div>

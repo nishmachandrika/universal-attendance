@@ -164,7 +164,7 @@ export async function exportWorkforceSettlementAsImage({
   // Company Brand Title
   ctx.fillStyle = '#f59e0b'; // Amber-500
   ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-  ctx.fillText('UNIVARSAL ATTANDANCE', 40, 42);
+  ctx.fillText('UNIVERSAL ATTENDANCE', 40, 42);
 
   ctx.fillStyle = '#94a3b8'; // Slate-400
   ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
@@ -563,7 +563,7 @@ export async function exportWorkforceSettlementAsImage({
   ctx.fillStyle = '#64748b';
   ctx.font = '10px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('UNIVARSAL ATTANDANCE & PAYROLL VERIFIED • OFFICIAL MONTHLY AUDIT SLIP', width / 2, height - 16);
+  ctx.fillText('UNIVERSAL ATTENDANCE & PAYROLL VERIFIED • OFFICIAL MONTHLY AUDIT SLIP', width / 2, height - 16);
   ctx.textAlign = 'left';
 
   // Trigger Instant Image Download
@@ -666,7 +666,7 @@ export async function exportWorkforceSettlementAsPDF({
 
         <div class="header-banner">
           <div>
-            <div class="brand-title">UNIVARSAL ATTANDANCE</div>
+            <div class="brand-title">UNIVERSAL ATTENDANCE</div>
             <div class="brand-subtitle">Workforce Billing, Weekly Muster & Settlement Slip</div>
           </div>
           <div class="doc-badge">

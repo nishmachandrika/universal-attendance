@@ -781,7 +781,7 @@ export const SiteUsers: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
                   <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                    Univarsal Attandance
+                    Universal Attendance
                   </h2>
                   <p className="text-xs text-slate-500">
                     Official Site Supervisor Credentials Manifest &bull; Generated {new Date().toLocaleDateString()}
@@ -828,7 +828,7 @@ export const SiteUsers: React.FC = () => {
 
               <div className="pt-4 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
                 <span>Instructions: Keep credentials secure. Do not share across non-assigned sites.</span>
-                <span>Univarsal Attandance &bull; Site Operations</span>
+                <span>Universal Attendance &bull; Site Operations</span>
               </div>
             </div>
 

@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
           <div className="min-w-0">
             <span className="font-extrabold text-slate-900 text-base tracking-tight leading-tight block truncate">
-              Univarsal Attandance
+              Universal Attendance
             </span>
             <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase block leading-tight mt-0.5">
               Workforce System

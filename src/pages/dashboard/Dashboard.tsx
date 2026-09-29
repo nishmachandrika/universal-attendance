@@ -164,7 +164,7 @@ export const Dashboard: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold mb-3 border border-white/20">
             <Sparkles className="h-3.5 w-3.5 text-blue-200" />
-            <span>Univarsal Attandance Cloud Hub</span>
+            <span>Universal Attendance Cloud Hub</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
