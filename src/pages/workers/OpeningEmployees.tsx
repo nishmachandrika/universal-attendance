@@ -341,9 +341,6 @@ export const OpeningEmployees: React.FC = () => {
           <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
             Opening Employees &amp; Prior Ledger Hub
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium max-w-3xl">
-            Configure historical employee joining dates, prior working days before digital cutoff, old advance loans, and past pending wage arrears.
-          </p>
         </div>
 
         <div className="flex items-center self-start sm:self-center">

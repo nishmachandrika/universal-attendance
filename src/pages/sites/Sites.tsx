@@ -460,18 +460,7 @@ export const Sites: React.FC = () => {
               >
                 <Edit3 className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSiteToDelete(row);
-                }}
-                className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
-                title="Delete Project Site"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </>
+              </>
           )}
         </div>
       ),
@@ -655,9 +644,6 @@ export const Sites: React.FC = () => {
               <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
                 Project Sites Directory
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                Select any project site below to open and inspect its operational trade sections and supervisors.
-              </p>
             </div>
 
             <div className="flex items-center space-x-2.5 self-start sm:self-center">
@@ -843,17 +829,6 @@ export const Sites: React.FC = () => {
                             title="Edit Site Details"
                           >
                             <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSiteToDelete(site);
-                            }}
-                            className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
-                            title="Delete Project Site"
-                          >
-                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       )}

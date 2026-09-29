@@ -33,6 +33,7 @@ import {
   Building2,
   Layers,
   ShieldCheck,
+  History,
 } from 'lucide-react';
 
 export type ReportType =
@@ -42,7 +43,8 @@ export type ReportType =
   | 'advance-payments'
   | 'food-report'
   | 'overall-reports'
-  | 'transfers-report';
+  | 'transfers-report'
+  | 'employee-history';
 
 export const Reports: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -101,6 +103,11 @@ export const Reports: React.FC = () => {
   const [transfersPeriod, setTransfersPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'all'>('monthly');
   const [transfersNature, setTransfersNature] = useState<'all' | 'permanent' | 'temporary'>('all');
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+  // Employee History states
+  const [historySiteFilter, setHistorySiteFilter] = useState('');
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [historySort, setHistorySort] = useState<'seniority-desc' | 'seniority-asc' | 'working-desc' | 'working-asc'>('seniority-desc');
 
   // Drilldown states
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
@@ -170,6 +177,12 @@ export const Reports: React.FC = () => {
       name: '7. Employees Transfers & Migrations',
       icon: ArrowRightLeft,
       desc: 'Section Transfers list, Site Transfers list, and custom date migration audit logs with PDF & Canvas image exports.',
+    },
+    {
+      id: 'employee-history' as ReportType,
+      name: '8. Employee History',
+      icon: History,
+      desc: 'Complete automatically generated history of all employees across all sites and sections based on seniority.',
     },
   ];
 
@@ -3509,6 +3522,145 @@ export const Reports: React.FC = () => {
                 },
               ]}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* 8. EMPLOYEE HISTORY REPORT */}
+      {/* ============================================================= */}
+      {activeReport === 'employee-history' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search employee by name..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 outline-none"
+                />
+              </div>
+              <div className="w-full sm:w-48">
+                <select
+                  value={historySiteFilter}
+                  onChange={(e) => setHistorySiteFilter(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="">All Sites</option>
+                  {sites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="w-full sm:w-48">
+                <select
+                  value={historySort}
+                  onChange={(e) => setHistorySort(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-600"
+                >
+                  <option value="seniority-desc">Seniority (Highest No. of Days)</option>
+                  <option value="seniority-asc">Lowest No. of Days</option>
+                  <option value="working-desc">Highest Working Days</option>
+                  <option value="working-asc">Lowest Working Days</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200/80 max-h-[600px] overflow-y-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200/80">
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">Employee Name</th>
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">Site</th>
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">Section</th>
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">Joining Date</th>
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">Working Days</th>
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">Absent Days</th>
+                    <th className="p-4 whitespace-nowrap sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 shadow-xs">No. of Days</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {(() => {
+                    const today = new Date();
+                    let list = workers.map(w => {
+                      const wAtt = attendance.filter(a => a.workerId === w.id);
+                      const pDays = wAtt.filter(a => a.status === 'present').length;
+                      const hDays = wAtt.filter(a => a.status === 'halfDay').length;
+                      const aDays = wAtt.filter(a => a.status === 'absent').length;
+                      const workingDays = pDays + (hDays * 0.5);
+                      
+                      let noOfDays = 0;
+                      if (w.joiningDate) {
+                        const jDate = new Date(w.joiningDate);
+                        const diff = Math.abs(today.getTime() - jDate.getTime());
+                        noOfDays = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+                      }
+
+                      return {
+                        ...w,
+                        workingDays,
+                        absentDays: aDays,
+                        noOfDays,
+                        siteName: sites.find(s => s.id === w.currentSiteId)?.name || '—',
+                        sectionName: sections.find(s => s.id === w.currentSectionId)?.name || '—',
+                      };
+                    });
+
+                    if (historySiteFilter) {
+                      list = list.filter(w => w.currentSiteId === historySiteFilter);
+                    }
+                    if (historySearchQuery) {
+                      const lowerq = historySearchQuery.toLowerCase();
+                      list = list.filter(w => w.name.toLowerCase().includes(lowerq));
+                    }
+
+                    list.sort((a, b) => {
+                      if (historySort === 'seniority-desc') {
+                        if (b.noOfDays !== a.noOfDays) return b.noOfDays - a.noOfDays;
+                        const dateA = a.joiningDate ? new Date(a.joiningDate).getTime() : 0;
+                        const dateB = b.joiningDate ? new Date(b.joiningDate).getTime() : 0;
+                        return dateA - dateB;
+                      } else if (historySort === 'seniority-asc') {
+                        if (a.noOfDays !== b.noOfDays) return a.noOfDays - b.noOfDays;
+                        const dateA = a.joiningDate ? new Date(a.joiningDate).getTime() : 0;
+                        const dateB = b.joiningDate ? new Date(b.joiningDate).getTime() : 0;
+                        return dateB - dateA;
+                      } else if (historySort === 'working-desc') {
+                        return b.workingDays - a.workingDays;
+                      } else if (historySort === 'working-asc') {
+                        return a.workingDays - b.workingDays;
+                      }
+                      return 0;
+                    });
+
+                    if (list.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={7} className="p-8 text-center text-slate-500 font-medium">
+                            No employees found matching the filters.
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return list.map(w => (
+                      <tr key={w.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="p-4 font-bold text-slate-900 whitespace-nowrap">{w.name}</td>
+                        <td className="p-4 text-slate-600 whitespace-nowrap">{w.siteName}</td>
+                        <td className="p-4 text-slate-600 whitespace-nowrap">{w.sectionName}</td>
+                        <td className="p-4 text-slate-600 whitespace-nowrap">{w.joiningDate || '—'}</td>
+                        <td className="p-4 text-emerald-600 font-bold whitespace-nowrap">{w.workingDays}</td>
+                        <td className="p-4 text-rose-600 font-bold whitespace-nowrap">{w.absentDays}</td>
+                        <td className="p-4 text-indigo-600 font-black whitespace-nowrap">{w.noOfDays > 0 ? w.noOfDays : '—'}</td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

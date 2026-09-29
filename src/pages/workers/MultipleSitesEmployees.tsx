@@ -175,9 +175,6 @@ export const MultipleSitesEmployees: React.FC = () => {
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                 Multiple Sites Employees
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                Record attendance at any project site &amp; section, note site-given amounts, and manage cross-site worker migrations.
-              </p>
             </div>
           </div>
         </div>
