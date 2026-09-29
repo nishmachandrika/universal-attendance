@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAttendanceContext } from '../../context/AttendanceContext';
-import { StatCard } from '../../components/common/StatCard';
+
 import { Toast } from '../../components/common/Toast';
 import { SectionFoodOrderModal } from '../../components/food/SectionFoodOrderModal';
 import type { Section, MealType } from '../../types';

@@ -4,7 +4,7 @@ import { useAttendanceContext } from '../../context/AttendanceContext';
 import type { Worker } from '../../types';
 import { DataTable } from '../../components/common/DataTable';
 import type { Column } from '../../components/common/DataTable';
-import { StatCard } from '../../components/common/StatCard';
+
 import { Toast } from '../../components/common/Toast';
 import { OpeningEmployeeModal } from '../../components/workers/OpeningEmployeeModal';
 import { CreateOpeningEmployeeModal } from '../../components/workers/CreateOpeningEmployeeModal';

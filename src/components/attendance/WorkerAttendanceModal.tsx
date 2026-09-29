@@ -62,7 +62,6 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
   const [date, setDate] = useState<string>(defaultDate || new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState<Attendance['status']>('present');
   const [checkInTime, setCheckInTime] = useState<string>('08:30');
-  const [checkOutTime, setCheckOutTime] = useState<string>('17:30');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [remarks, setRemarks] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -133,7 +132,6 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
     if (existingAttendance) {
       setStatus(existingAttendance.status);
       setCheckInTime(existingAttendance.checkIn || '08:30');
-      setCheckOutTime(existingAttendance.checkOut || '');
       setPhotoUrl(existingAttendance.photoUrl || null);
       setRemarks(existingAttendance.remarks || '');
       setActiveTab(existingAttendance.method || initialTab || 'manual');
@@ -152,7 +150,6 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
     } else {
       setStatus('present');
       setCheckInTime(new Date().toTimeString().substring(0, 5) || '08:30');
-      setCheckOutTime('17:30');
       setPhotoUrl(null);
       setRemarks('');
       setActiveTab(initialTab || 'manual');
@@ -247,7 +244,7 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
     setScanFeedback('Face ID Verified (99.2% confidence)');
 
     // Save attendance immediately
-    saveAttendanceRecord('face', 'present', new Date().toTimeString().substring(0, 5), checkOutTime);
+    saveAttendanceRecord('face', 'present', new Date().toTimeString().substring(0, 5));
   };
 
   const handleFingerprintScan = async () => {
@@ -261,7 +258,7 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
     setScanFeedback(`Fingerprint Matched (Template #FP-${worker.id})`);
 
     // Save attendance immediately
-    saveAttendanceRecord('fingerprint', 'present', new Date().toTimeString().substring(0, 5), checkOutTime);
+    saveAttendanceRecord('fingerprint', 'present', new Date().toTimeString().substring(0, 5));
   };
 
   const saveAttendanceRecord = (
@@ -279,7 +276,6 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
 
     const finalStatus = customStatus || status;
     const finalCheckIn = customCheckIn !== undefined ? customCheckIn : checkInTime;
-    const finalCheckOut = customCheckOut !== undefined ? customCheckOut : checkOutTime;
     const parsedSiteAmount = hasSiteAmount && siteAmount ? parseFloat(siteAmount) : undefined;
 
     registerOrUpdateAttendance({
@@ -289,7 +285,7 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
       status: finalStatus,
       method,
       checkIn: finalCheckIn || undefined,
-      checkOut: finalCheckOut || undefined,
+      checkOut: customCheckOut || undefined,
       photoUrl: photoUrl || undefined,
       remarks: remarks.trim() || undefined,
       markedBy: currentUser?.name || 'Site Supervisor',
@@ -608,9 +604,9 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
               </div>
             </div>
 
-            {/* Check-In and Check-Out Times */}
+            {/* Check-In Time */}
             {status !== 'absent' && status !== 'leave' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
                 {/* Check In Time */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -647,42 +643,6 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
                   </div>
                 </div>
 
-                {/* Check Out Time */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-                      <Clock className="h-3.5 w-3.5 text-blue-600" />
-                      <span>Check-Out Time (Optional)</span>
-                    </label>
-                    {checkOutTime && (
-                      <button
-                        type="button"
-                        onClick={() => setCheckOutTime('')}
-                        className="text-[11px] font-semibold text-rose-500 hover:underline cursor-pointer"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="time"
-                    value={checkOutTime}
-                    onChange={(e) => setCheckOutTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                  <div className="flex items-center space-x-1 mt-1.5">
-                    {['17:00', '17:30', '18:00'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setCheckOutTime(preset)}
-                        className="px-2 py-0.5 text-[10px] font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-50 cursor-pointer"
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
 

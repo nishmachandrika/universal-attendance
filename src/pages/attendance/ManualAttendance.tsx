@@ -4,9 +4,10 @@ import type { Worker, Attendance } from '../../types';
 import { Select } from '../../components/common/Select';
 import { DatePicker } from '../../components/common/DatePicker';
 import { Toast } from '../../components/common/Toast';
-import { ArrowLeft, Save, Check, UserMinus, RefreshCw, Eye, CalendarCheck } from 'lucide-react';
+import { ArrowLeft, Save, Check, UserMinus, RefreshCw, Eye, CalendarCheck, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { WorkerAttendanceModal } from '../../components/attendance/WorkerAttendanceModal';
+import { WorkerCheckOutModal } from '../../components/attendance/WorkerCheckOutModal';
 
 export const ManualAttendance: React.FC = () => {
   const { sites, sections, workers, assignments, attendance, bulkSaveAttendance, currentUser } = useAttendanceContext();
@@ -31,6 +32,7 @@ export const ManualAttendance: React.FC = () => {
   const [reasons, setReasons] = useState<Record<string, string>>(initialState?.reasons || {});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedWorkerForAttendance, setSelectedWorkerForAttendance] = useState<Worker | null>(null);
+  const [selectedWorkerForCheckOut, setSelectedWorkerForCheckOut] = useState<Worker | null>(null);
 
   useEffect(() => {
     sessionStorage.setItem('manualAttendanceState', JSON.stringify({
@@ -280,6 +282,10 @@ export const ManualAttendance: React.FC = () => {
                     const originalStatus = originalSheetState[worker.id];
                     const hasChanged = originalStatus && originalStatus !== status;
 
+                    const todayRecord = attendance.find(a => a.workerId === worker.id && a.date === date);
+                    const hasCheckedIn = !!(todayRecord && todayRecord.checkIn);
+                    const hasCheckedOut = !!(todayRecord && todayRecord.checkOut);
+
                     return (
                       <tr key={worker.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
@@ -335,15 +341,37 @@ export const ManualAttendance: React.FC = () => {
                               <Eye className="h-3.5 w-3.5 text-gray-500" />
                               <span>View</span>
                             </Link>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedWorkerForAttendance(worker)}
-                              className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
-                              title="Record Face ID, Fingerprint, or Manual Attendance"
-                            >
-                              <CalendarCheck className="h-3.5 w-3.5" />
-                              <span>Check In</span>
-                            </button>
+
+                            {!hasCheckedOut && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedWorkerForAttendance(worker)}
+                                className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                                title="Record Face ID, Fingerprint, or Manual Attendance"
+                              >
+                                <CalendarCheck className="h-3.5 w-3.5" />
+                                <span>Check In</span>
+                              </button>
+                            )}
+
+                            {hasCheckedIn && !hasCheckedOut && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedWorkerForCheckOut(worker)}
+                                className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                                title="Record Check-Out"
+                              >
+                                <Clock className="h-3.5 w-3.5" />
+                                <span>Check Out</span>
+                              </button>
+                            )}
+
+                            {hasCheckedIn && hasCheckedOut && (
+                              <span className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs flex items-center space-x-1">
+                                <Check className="h-3.5 w-3.5" />
+                                <span>Completed</span>
+                              </span>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -375,6 +403,22 @@ export const ManualAttendance: React.FC = () => {
           isOpen={!!selectedWorkerForAttendance}
           onClose={() => setSelectedWorkerForAttendance(null)}
           worker={selectedWorkerForAttendance}
+          site={sites.find(s => s.id === selectedSiteId) || null}
+          section={sections.find(s => s.id === selectedSectionId) || null}
+          defaultDate={date}
+          onSuccess={(workerName, message) => {
+            setToastMessage(`✓ ${workerName}: ${message}`);
+            handleLoadSheet();
+          }}
+        />
+      )}
+
+      {selectedWorkerForCheckOut && (
+        <WorkerCheckOutModal
+          isOpen={!!selectedWorkerForCheckOut}
+          onClose={() => setSelectedWorkerForCheckOut(null)}
+          worker={selectedWorkerForCheckOut}
+          workers={assignedWorkers}
           site={sites.find(s => s.id === selectedSiteId) || null}
           section={sections.find(s => s.id === selectedSectionId) || null}
           defaultDate={date}
