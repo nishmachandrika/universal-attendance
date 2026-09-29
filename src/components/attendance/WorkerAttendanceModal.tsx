@@ -28,6 +28,7 @@ export interface WorkerAttendanceModalProps {
   allowSiteSelection?: boolean;
   initialTab?: 'manual' | 'face' | 'fingerprint';
   defaultSiteAmountGiven?: number;
+  defaultDate?: string;
   onSuccess?: (workerName: string, message: string) => void;
 }
 
@@ -42,6 +43,7 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
   allowSiteSelection = true,
   initialTab,
   defaultSiteAmountGiven,
+  defaultDate,
   onSuccess,
 }) => {
   const {
@@ -57,7 +59,7 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
   const allSections = sections && sections.length > 0 ? sections : contextSections;
 
   const [activeTab, setActiveTab] = useState<'manual' | 'face' | 'fingerprint'>('manual');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(defaultDate || new Date().toISOString().split('T')[0]);
   const [status, setStatus] = useState<Attendance['status']>('present');
   const [checkInTime, setCheckInTime] = useState<string>('08:30');
   const [checkOutTime, setCheckOutTime] = useState<string>('17:30');
@@ -110,6 +112,12 @@ export const WorkerAttendanceModal: React.FC<WorkerAttendanceModalProps> = ({
     : undefined;
 
   // Initialize or reset form when worker or date changes
+  useEffect(() => {
+    if (isOpen) {
+      setDate(defaultDate || new Date().toISOString().split('T')[0]);
+    }
+  }, [isOpen, defaultDate]);
+
   useEffect(() => {
     if (site?.id) {
       setSelectedSiteId(site.id);

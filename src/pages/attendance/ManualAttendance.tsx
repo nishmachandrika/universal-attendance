@@ -4,36 +4,71 @@ import type { Worker, Attendance } from '../../types';
 import { Select } from '../../components/common/Select';
 import { DatePicker } from '../../components/common/DatePicker';
 import { Toast } from '../../components/common/Toast';
-import { ArrowLeft, Save, Check, UserMinus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, Check, UserMinus, RefreshCw, Eye, CalendarCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { WorkerAttendanceModal } from '../../components/attendance/WorkerAttendanceModal';
 
 export const ManualAttendance: React.FC = () => {
   const { sites, sections, workers, assignments, attendance, bulkSaveAttendance, currentUser } = useAttendanceContext();
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedSiteId, setSelectedSiteId] = useState(currentUser?.role === 'supervisor' ? currentUser?.assignedSiteId || '' : '');
-  const [selectedSectionId, setSelectedSectionId] = useState('');
-  const [loaded, setLoaded] = useState(false);
-  const [assignedWorkers, setAssignedWorkers] = useState<Worker[]>([]);
-  const [sheetState, setSheetState] = useState<Record<string, Attendance['status']>>({});
-  const [originalSheetState, setOriginalSheetState] = useState<Record<string, Attendance['status']>>({});
-  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const getInitialState = () => {
+    try {
+      const saved = sessionStorage.getItem('manualAttendanceState');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  };
+
+  const initialState = getInitialState();
+
+  const [date, setDate] = useState(initialState?.date || new Date().toISOString().split('T')[0]);
+  const [selectedSiteId, setSelectedSiteId] = useState(initialState?.selectedSiteId || (currentUser?.role === 'supervisor' ? currentUser?.assignedSiteId || '' : ''));
+  const [selectedSectionId, setSelectedSectionId] = useState(initialState?.selectedSectionId || '');
+  const [loaded, setLoaded] = useState(initialState?.loaded || false);
+  const [assignedWorkers, setAssignedWorkers] = useState<Worker[]>(initialState?.assignedWorkers || []);
+  const [sheetState, setSheetState] = useState<Record<string, Attendance['status']>>(initialState?.sheetState || {});
+  const [originalSheetState, setOriginalSheetState] = useState<Record<string, Attendance['status']>>(initialState?.originalSheetState || {});
+  const [reasons, setReasons] = useState<Record<string, string>>(initialState?.reasons || {});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedWorkerForAttendance, setSelectedWorkerForAttendance] = useState<Worker | null>(null);
+
+  useEffect(() => {
+    sessionStorage.setItem('manualAttendanceState', JSON.stringify({
+      date,
+      selectedSiteId,
+      selectedSectionId,
+      loaded,
+      assignedWorkers,
+      sheetState,
+      originalSheetState,
+      reasons
+    }));
+  }, [date, selectedSiteId, selectedSectionId, loaded, assignedWorkers, sheetState, originalSheetState, reasons]);
 
   // Filter sections based on selected site
   const filteredSections = sections.filter((sec) => sec.siteId === selectedSiteId && sec.status === 'active');
 
+  const isMounted1 = React.useRef(false);
   // Trigger site changes to clear section
   useEffect(() => {
-    setSelectedSectionId('');
-    setLoaded(false);
+    if (isMounted1.current) {
+      setSelectedSectionId('');
+      setLoaded(false);
+    } else {
+      isMounted1.current = true;
+    }
   }, [selectedSiteId]);
 
+  const isMounted2 = React.useRef(false);
   // Sync selectedSiteId if role or assignedSite changes
   useEffect(() => {
-    setSelectedSiteId(currentUser?.role === 'supervisor' ? currentUser?.assignedSiteId || '' : '');
-    setSelectedSectionId('');
-    setLoaded(false);
+    if (isMounted2.current) {
+      setSelectedSiteId(currentUser?.role === 'supervisor' ? currentUser?.assignedSiteId || '' : '');
+      setSelectedSectionId('');
+      setLoaded(false);
+    } else {
+      isMounted2.current = true;
+    }
   }, [currentUser]);
 
   const handleLoadSheet = () => {
@@ -101,8 +136,8 @@ export const ManualAttendance: React.FC = () => {
 
   const handleClear = () => {
     const updated: Record<string, Attendance['status']> = {};
-    assignedWorkers.forEach((w) => {
-      updated[w.id] = 'absent';
+    assignedWorkers.forEach((savedWorker) => {
+      updated[savedWorker.id] = 'absent';
     });
     setSheetState((prev) => ({ ...prev, ...updated }));
   };
@@ -111,7 +146,8 @@ export const ManualAttendance: React.FC = () => {
     // Validate that if there's a status modification to an existing record, a reason has been typed
     const modifiedWithoutReason: string[] = [];
 
-    assignedWorkers.forEach((w) => {
+    assignedWorkers.forEach((savedWorker) => {
+      const w = workers.find(worker => worker.id === savedWorker.id) || savedWorker;
       const orig = originalSheetState[w.id];
       const current = sheetState[w.id];
       if (orig && orig !== current) {
@@ -234,10 +270,12 @@ export const ManualAttendance: React.FC = () => {
                     <th className="px-6 py-3">Worker (Serial)</th>
                     <th className="px-6 py-3 w-[220px]">Daily Status</th>
                     <th className="px-6 py-3">Audit Trails & Remarks</th>
+                    <th className="px-6 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 text-sm">
-                  {assignedWorkers.map((worker) => {
+                  {assignedWorkers.map((savedWorker) => {
+                    const worker = workers.find((w) => w.id === savedWorker.id) || savedWorker;
                     const status = sheetState[worker.id];
                     const originalStatus = originalSheetState[worker.id];
                     const hasChanged = originalStatus && originalStatus !== status;
@@ -288,6 +326,26 @@ export const ManualAttendance: React.FC = () => {
                             <span className="text-xs text-gray-400 italic">Fresh record check-in</span>
                           )}
                         </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <Link
+                              to={`/workers/${worker.id}`}
+                              className="inline-flex items-center space-x-1 px-3 py-1.5 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            >
+                              <Eye className="h-3.5 w-3.5 text-gray-500" />
+                              <span>View</span>
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedWorkerForAttendance(worker)}
+                              className="px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center space-x-1 cursor-pointer"
+                              title="Record Face ID, Fingerprint, or Manual Attendance"
+                            >
+                              <CalendarCheck className="h-3.5 w-3.5" />
+                              <span>Check In</span>
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -310,6 +368,21 @@ export const ManualAttendance: React.FC = () => {
 
       {toastMessage && (
         <Toast message={toastMessage} type="success" onClose={() => setToastMessage(null)} />
+      )}
+
+      {selectedWorkerForAttendance && (
+        <WorkerAttendanceModal
+          isOpen={!!selectedWorkerForAttendance}
+          onClose={() => setSelectedWorkerForAttendance(null)}
+          worker={selectedWorkerForAttendance}
+          site={sites.find(s => s.id === selectedSiteId) || null}
+          section={sections.find(s => s.id === selectedSectionId) || null}
+          defaultDate={date}
+          onSuccess={(workerName, message) => {
+            setToastMessage(`✓ ${workerName}: ${message}`);
+            handleLoadSheet();
+          }}
+        />
       )}
     </div>
   );
