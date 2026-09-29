@@ -75,7 +75,7 @@ export const FaceAttendance: React.FC = () => {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center space-x-3">
-        <Link to="/attendance" className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+        <Link to="/dashboard" className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
           <ArrowLeft className="h-4 w-4 text-gray-600" />
         </Link>
         <div>

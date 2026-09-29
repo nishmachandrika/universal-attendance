@@ -19,6 +19,7 @@ import {
   Search,
   Edit3,
   Trash2,
+  ArrowLeft,
 } from 'lucide-react';
 import { NewEmployeeJoiningModal } from '../../components/sections/NewEmployeeJoiningModal';
 import { EditEmployeeModal } from '../../components/sections/EditEmployeeModal';
@@ -320,13 +321,18 @@ export const Workers: React.FC = () => {
     <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Workforce Registry & 360</h1>
+        <div className="flex items-start sm:items-center space-x-3">
+          <Link to="/dashboard" className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors mt-1 sm:mt-0 shrink-0">
+            <ArrowLeft className="h-4 w-4 text-gray-600" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Workforce Registry & 360</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
             {currentUser?.role === 'supervisor'
               ? `Authorized Worker Roster for Site ${currentUser?.assignedSiteId}.`
               : 'Permanent ID management, site deployments, biometric check-ins, and outside contractor commissions.'}
           </p>
+          </div>
         </div>
 
         {currentUser?.role === 'admin' && (
