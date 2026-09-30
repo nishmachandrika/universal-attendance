@@ -1666,13 +1666,17 @@ export const Reports: React.FC = () => {
       const tableOuter = reportExportRef.current.querySelector('.overflow-hidden');
       
       const originalWrapperOverflow = tableWrapper ? (tableWrapper as HTMLElement).style.overflow : '';
+      const originalWrapperMaxHeight = tableWrapper ? (tableWrapper as HTMLElement).style.maxHeight : '';
       const originalOuterOverflow = tableOuter ? (tableOuter as HTMLElement).style.overflow : '';
       const originalRefWidth = reportExportRef.current.style.width;
       const originalRefMaxWidth = reportExportRef.current.style.maxWidth;
       const originalRefOverflow = reportExportRef.current.style.overflow;
       
       // Temporarily remove overflow constraints and force max width
-      if (tableWrapper) (tableWrapper as HTMLElement).style.overflow = 'visible';
+      if (tableWrapper) {
+        (tableWrapper as HTMLElement).style.overflow = 'visible';
+        (tableWrapper as HTMLElement).style.maxHeight = 'none';
+      }
       if (tableOuter) (tableOuter as HTMLElement).style.overflow = 'visible';
       
       reportExportRef.current.style.overflow = 'visible';
@@ -1701,7 +1705,10 @@ export const Reports: React.FC = () => {
       });
       
       // Revert styles
-      if (tableWrapper) (tableWrapper as HTMLElement).style.overflow = originalWrapperOverflow;
+      if (tableWrapper) {
+        (tableWrapper as HTMLElement).style.overflow = originalWrapperOverflow;
+        (tableWrapper as HTMLElement).style.maxHeight = originalWrapperMaxHeight;
+      }
       if (tableOuter) (tableOuter as HTMLElement).style.overflow = originalOuterOverflow;
       
       reportExportRef.current.style.width = originalRefWidth;
@@ -1736,8 +1743,8 @@ export const Reports: React.FC = () => {
         </div>
       </div>
 
-      {/* 7 Primary Report Navigation Cards / Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+      {/* Primary Report Navigation Cards / Tabs */}
+      <div className="flex overflow-x-auto gap-2 pb-2 -mb-2 snap-x hide-scrollbar">
         {reportDefinitions.map((rep, idx) => {
           const isActive = rep.id === activeReport;
           const Icon = rep.icon;
@@ -1746,22 +1753,20 @@ export const Reports: React.FC = () => {
               key={rep.id}
               onClick={() => handleSwitchReport(rep.id)}
               type="button"
-              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${isActive
+              className={`py-1.5 px-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center space-x-2.5 shrink-0 snap-start w-56 sm:w-64 ${isActive
                   ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-1 ring-blue-500/20'
                   : 'bg-white hover:bg-slate-50 border-slate-200/80 hover:border-slate-300'
                 }`}
             >
-              <div className="flex items-center justify-between">
-                <div
-                  className={`h-8 w-8 rounded-xl flex items-center justify-center ${isActive ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
-                    }`}
-                >
-                  <Icon className="h-4 w-4" />
-                </div>
-                <span className="text-[10px] font-mono font-bold text-slate-400">0{idx + 1}</span>
+              <div
+                className={`h-6 w-6 rounded-lg shrink-0 flex items-center justify-center ${isActive ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-100 text-slate-600'
+                  }`}
+              >
+                <Icon className="h-3 w-3" />
               </div>
-              <div>
-                <h3 className={`text-xs font-bold leading-snug line-clamp-2 ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>
+              <div className="flex flex-col justify-center pr-1 overflow-hidden">
+                <span className="text-[9px] font-mono font-bold text-slate-400 leading-none mb-0.5 uppercase tracking-wider">Tab 0{idx + 1}</span>
+                <h3 className={`text-xs font-bold leading-none truncate ${isActive ? 'text-blue-900' : 'text-slate-800'}`}>
                   {rep.name.replace(/^\d+\.\s*/, '')}
                 </h3>
               </div>
@@ -2270,10 +2275,10 @@ export const Reports: React.FC = () => {
           <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-sm font-black text-slate-900">
                   Daily Section Attendance &amp; Overtime Roll ({dateFilterMode === 'custom' ? `${customStartDate} to ${customEndDate}` : selectedDate})
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Section headcounts, present mandays, food eligibility, and worker drilldowns with Custom Audit Slips.
                 </p>
               </div>
@@ -2459,10 +2464,10 @@ export const Reports: React.FC = () => {
         <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-sm font-black text-slate-900">
                 Weekly Attendance &amp; Wage Accrual Roll &bull; {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : activeWeekInfo.label}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 {weeklyViewMode === 'section'
                   ? 'Aggregated section-wise 7-day attendance mandays and total estimated section wage bills.'
                   : 'Individual employee-wise muster roll with day-by-day P/H/A flags, and Custom Audit Slips.'}
@@ -2652,10 +2657,10 @@ export const Reports: React.FC = () => {
         <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-sm font-black text-slate-900">
                 Monthly Attendance Master Roll &bull; {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : selectedMonth}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 {monthlyViewMode === 'section'
                   ? 'Monthly aggregated headcounts, present mandays, and gross wage totals by section.'
                   : 'Individual employee monthly muster roll with daily wage rates, mandays, and Custom Audit Slips.'}
@@ -2811,12 +2816,12 @@ export const Reports: React.FC = () => {
         <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-sm font-black text-slate-900">
                 Advance Payment, Recovery &amp; Debt Ledger &bull;{' '}
                 {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : advancePeriod.toUpperCase()}{' '}
                 ({advanceDimension.toUpperCase()})
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Audited cash advances, daily wage recovery cuts, running balances, and Custom Audit Slips.
               </p>
             </div>
@@ -2973,12 +2978,12 @@ export const Reports: React.FC = () => {
         <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-sm font-black text-slate-900">
                 Food &amp; Canteen Distribution Audit &bull;{' '}
                 {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : foodPeriod.toUpperCase()}{' '}
                 ({foodDimension.toUpperCase()})
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Meal quantities derived strictly from attendance (Present = 1.0 unit, Half Day = 0.5 unit, Absent = 0).
               </p>
             </div>
@@ -3104,11 +3109,11 @@ export const Reports: React.FC = () => {
         <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-black text-slate-900">
+              <h3 className="text-sm font-black text-slate-900">
                 Master 360° Employee Dossier &bull;{' '}
                 {dateFilterMode === 'custom' ? `Custom: ${customStartDate} to ${customEndDate}` : overallPeriod.toUpperCase()}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Consolidated worker audit uniting Attendance (P/H/A), Food Meals, Gross Wages, Advance Deductions, and Custom Audit Slips.
               </p>
             </div>
@@ -3325,8 +3330,8 @@ export const Reports: React.FC = () => {
           <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <ArrowRightLeft className="h-5 w-5 text-blue-600" />
+                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                  <ArrowRightLeft className="h-4 w-4 text-blue-600" />
                   <span>
                     {transfersSubView === 'site'
                       ? 'Cross-Site Transfers Register'
@@ -3334,7 +3339,7 @@ export const Reports: React.FC = () => {
                         ? 'Section Craft Transfers Register'
                         : 'Comprehensive Employees Transfers & Migrations Register'}
                   </span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                     {transfersReportData.activeList.length} records
                   </span>
                 </h3>
@@ -3531,7 +3536,26 @@ export const Reports: React.FC = () => {
       {/* ============================================================= */}
       {activeReport === 'employee-history' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-black text-slate-900">
+                  Employee History
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Search and view employee attendance and history details.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleDownloadReportImage}
+                className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Download PNG</span>
+              </button>
+            </div>
+
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px]">
