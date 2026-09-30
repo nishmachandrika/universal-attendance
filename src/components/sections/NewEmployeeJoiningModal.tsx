@@ -802,7 +802,7 @@ export const NewEmployeeJoiningModal: React.FC<NewEmployeeJoiningModalProps> = (
                 <optgroup label="Existing Senior Workers as References">
                   {workers.slice(0, 8).map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.name} - ID {w.id} ({w.mobile})
+                      {w.id}({w.mobile})
                     </option>
                   ))}
                 </optgroup>
