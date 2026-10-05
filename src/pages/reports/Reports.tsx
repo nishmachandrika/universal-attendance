@@ -142,7 +142,7 @@ export const Reports: React.FC = () => {
   const reportDefinitions = [
     {
       id: 'monthly-attendance' as ReportType,
-      name: '1. Monthly Attendance (Section & Emply)',
+      name: '1.Attendance',
       icon: Users,
       desc: 'Full month attendance master roll, cumulative mandays, full duty, half days, and absences by section and employee.',
     },
