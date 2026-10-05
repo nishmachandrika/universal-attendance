@@ -43,7 +43,8 @@ export type ReportType =
   | 'food-report'
   | 'overall-reports'
   | 'transfers-report'
-  | 'employee-history';
+  | 'employee-history'
+  | 'payment-history';
 
 export const Reports: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,6 +110,9 @@ export const Reports: React.FC = () => {
   const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [historySort, setHistorySort] = useState<'seniority-desc' | 'seniority-asc' | 'working-desc' | 'working-asc'>('seniority-desc');
 
+  // Payment History states
+  const [paymentHistorySort, setPaymentHistorySort] = useState<'desc' | 'asc'>('desc');
+
   // Drilldown states
   const [expandedSectionId, setExpandedSectionId] = useState<string | null>(null);
 
@@ -171,6 +175,12 @@ export const Reports: React.FC = () => {
       name: '8. Employee History',
       icon: History,
       desc: 'Complete automatically generated history of all employees across all sites and sections based on seniority.',
+    },
+    {
+      id: 'payment-history' as ReportType,
+      name: '9. Payment History',
+      icon: CreditCard,
+      desc: 'Total lifetime advance payments received per worker, dynamically calculated from advance records.',
     },
   ];
 
@@ -1079,6 +1089,68 @@ export const Reports: React.FC = () => {
     sections,
   ]);
 
+  // REPORT 9: Payment History Data
+  const paymentHistoryReportData = useMemo(() => {
+    let list = accessibleWorkers.map((w) => {
+      const sec = sections.find((s) => s.id === w.currentSectionId);
+      const st = sites.find((s) => s.id === w.currentSiteId);
+      const workerAdvances = advances.filter((a) => a.workerId === w.id);
+      
+      const totalAdvanceAmount = workerAdvances.reduce((sum, a) => sum + a.amount, 0);
+      const advanceCount = workerAdvances.length;
+
+      let lastPaymentDate = '—';
+      if (workerAdvances.length > 0) {
+        const sorted = [...workerAdvances].sort((a, b) => b.date.localeCompare(a.date));
+        lastPaymentDate = sorted[0].date;
+      }
+
+      let paymentStatus = 'No Advances';
+      if (advanceCount > 0) {
+        const hasPending = workerAdvances.some((a) => a.status === 'pending' || a.status === 'processing');
+        const hasActive = workerAdvances.some((a) => a.status === 'active');
+        const allClosed = workerAdvances.every((a) => a.status === 'closed');
+
+        if (hasPending) {
+          paymentStatus = 'Pending Approval';
+        } else if (allClosed) {
+          paymentStatus = 'Paid / Closed';
+        } else if (hasActive) {
+          paymentStatus = 'Active';
+        } else {
+          paymentStatus = 'Recorded';
+        }
+      }
+
+      return {
+        worker: w,
+        site: st,
+        section: sec,
+        totalAdvanceAmount,
+        advanceCount,
+        lastPaymentDate,
+        paymentStatus,
+      };
+    });
+
+    list.sort((a, b) => {
+      if (paymentHistorySort === 'desc') {
+        return b.totalAdvanceAmount - a.totalAdvanceAmount;
+      } else {
+        return a.totalAdvanceAmount - b.totalAdvanceAmount;
+      }
+    });
+
+    const totalAdvanceDisbursed = list.reduce((sum, item) => sum + item.totalAdvanceAmount, 0);
+    const totalWorkersWithAdvances = list.filter((item) => item.totalAdvanceAmount > 0).length;
+
+    return {
+      list,
+      totalAdvanceDisbursed,
+      totalWorkersWithAdvances,
+    };
+  }, [accessibleWorkers, sections, sites, advances, paymentHistorySort]);
+
   // -------------------------------------------------------------
   // UNIVERSAL EXPORT CONFIGURATION BUILDER (with Custom Audit Details)
   // -------------------------------------------------------------
@@ -1629,6 +1701,38 @@ export const Reports: React.FC = () => {
           m.approvedBy,
         ];
       });
+    } else if (activeReport === 'payment-history') {
+      reportTitle = 'Payment History Report';
+      subtitle = 'Cumulative Lifetime Advance Payments Received per Worker';
+      periodLabel = 'All Time / Lifetime Cumulative';
+
+      summaryKpis = [
+        { label: 'Total Workers Audited', value: paymentHistoryReportData.list.length, color: '#2563eb' },
+        { label: 'Workers Received Advances', value: paymentHistoryReportData.totalWorkersWithAdvances, color: '#059669' },
+        { label: 'Total Advance Disbursed', value: `₹${paymentHistoryReportData.totalAdvanceDisbursed.toLocaleString()}`, color: '#d97706' },
+      ];
+
+      tableHeaders = [
+        'Worker ID',
+        'Worker Name',
+        'Project Site',
+        'Work Section',
+        'Total Advance Payment',
+        'No. of Advances',
+        'Last Advance Date',
+        'Payment Status',
+      ];
+
+      tableRows = paymentHistoryReportData.list.map((d) => [
+        d.worker.id,
+        d.worker.name,
+        d.site?.name || '—',
+        d.section?.name || '—',
+        `₹${d.totalAdvanceAmount.toLocaleString()}`,
+        d.advanceCount,
+        d.lastPaymentDate,
+        d.paymentStatus,
+      ]);
     }
 
     return {
@@ -1679,6 +1783,8 @@ export const Reports: React.FC = () => {
     foodReportData,
     overallReportData,
     transfersReportData,
+    paymentHistoryReportData,
+    paymentHistorySort,
     currentUser,
   ]);
 
@@ -2276,6 +2382,33 @@ export const Reports: React.FC = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Report 9: Payment History Sort Switcher */}
+          {activeReport === 'payment-history' && (
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-slate-500">Sort by Advance Payment:</span>
+              <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setPaymentHistorySort('desc')}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                    paymentHistorySort === 'desc' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Highest to Lowest (Descending)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentHistorySort('asc')}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                    paymentHistorySort === 'asc' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Lowest to Highest (Ascending)
+                </button>
               </div>
             </div>
           )}
@@ -3734,6 +3867,120 @@ export const Reports: React.FC = () => {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* 9. PAYMENT HISTORY REPORT TAB */}
+      {/* ============================================================= */}
+      {activeReport === 'payment-history' && (
+        <div ref={reportExportRef} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">
+                Payment History Register &bull; Cumulative Lifetime Advances
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Automatically calculated total advance payments received per worker from beginning until now, ranked dynamically.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadReportImage}
+              className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold inline-flex items-center space-x-1.5 transition-all cursor-pointer shadow-xs ml-auto shrink-0"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
+            </button>
+          </div>
+
+          {/* Quick Sort & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-50/70 rounded-2xl border border-slate-200/60">
+            <div className="text-xs font-semibold text-slate-600 flex items-center space-x-2">
+              <span className="font-bold text-slate-700">Sort Order:</span>
+              <select
+                value={paymentHistorySort}
+                onChange={(e) => setPaymentHistorySort(e.target.value as 'desc' | 'asc')}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
+              >
+                <option value="desc">Highest to Lowest (Descending)</option>
+                <option value="asc">Lowest to Highest (Ascending)</option>
+              </select>
+            </div>
+
+            <div className="text-xs font-semibold text-slate-500">
+              Showing <span className="font-bold text-slate-900">{paymentHistoryReportData.list.length}</span> workers (
+              <span className="text-emerald-700 font-bold">{paymentHistoryReportData.totalWorkersWithAdvances}</span> received advances)
+            </div>
+          </div>
+
+          <DataTable
+            data={paymentHistoryReportData.list}
+            columns={[
+              {
+                header: 'Worker Name',
+                render: (d) => (
+                  <div>
+                    <Link to={`/workers/${d.worker.id}`} className="font-bold text-xs text-slate-900 hover:text-blue-600">
+                      {d.worker.name}
+                    </Link>
+                    {(d.worker.designation || d.worker.purpose) && (
+                      <span className="block text-[10px] text-slate-400">
+                        {d.worker.designation || d.worker.purpose}
+                      </span>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                header: 'Worker ID',
+                render: (d) => <span className="font-mono text-xs font-bold text-indigo-700">{d.worker.id}</span>,
+              },
+              {
+                header: 'Project Site',
+                render: (d) => <span className="text-xs text-slate-700 font-medium">{d.site?.name || '—'}</span>,
+              },
+              {
+                header: 'Work Section',
+                render: (d) => <span className="text-xs text-slate-700 font-medium">{d.section?.name || '—'}</span>,
+              },
+              {
+                header: 'Total Advance Payment',
+                render: (d) => (
+                  <span className={`font-black text-xs ${d.totalAdvanceAmount > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+                    ₹{d.totalAdvanceAmount.toLocaleString()}
+                  </span>
+                ),
+              },
+              {
+                header: 'No. of Advances',
+                render: (d) => (
+                  <span className="text-xs font-bold text-slate-700">
+                    {d.advanceCount} {d.advanceCount === 1 ? 'payment' : 'payments'}
+                  </span>
+                ),
+              },
+              {
+                header: 'Last Advance Date',
+                render: (d) => <span className="text-xs font-mono text-slate-600">{d.lastPaymentDate}</span>,
+              },
+              {
+                header: 'Payment Status',
+                render: (d) => {
+                  let badgeColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                  if (d.paymentStatus === 'Pending Approval') badgeColor = 'bg-amber-50 text-amber-800 border-amber-200';
+                  else if (d.paymentStatus === 'Paid / Settled') badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                  else if (d.paymentStatus === 'Approved') badgeColor = 'bg-blue-50 text-blue-800 border-blue-200';
+
+                  return (
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
+                      {d.paymentStatus}
+                    </span>
+                  );
+                },
+              },
+            ]}
+          />
         </div>
       )}
       </div>
