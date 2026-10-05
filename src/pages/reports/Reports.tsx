@@ -17,7 +17,6 @@ import { CustomSiteMigrationModal } from '../../components/workers/CustomSiteMig
 import type { Worker, MonthlySettlementRecord } from '../../types';
 import {
   Calendar,
-  FileSpreadsheet,
   Users,
   CreditCard,
   Utensils,
@@ -48,7 +47,7 @@ export type ReportType =
 
 export const Reports: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialReport = (searchParams.get('report') as ReportType) || 'daily-attendance-section';
+  const initialReport = (searchParams.get('report') as ReportType) || 'monthly-attendance';
   const reportRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -92,6 +91,7 @@ export const Reports: React.FC = () => {
   // Sub-dimensions / View modes for each report
   const [weeklyViewMode, setWeeklyViewMode] = useState<'section' | 'employee'>('section');
   const [monthlyViewMode, setMonthlyViewMode] = useState<'section' | 'employee'>('section');
+  const [monthlyPeriod, setMonthlyPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [advanceDimension, setAdvanceDimension] = useState<'section' | 'employee' | 'ref_agents'>('section');
   const [advancePeriod, setAdvancePeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [foodDimension, setFoodDimension] = useState<'section' | 'employee'>('section');
@@ -134,20 +134,8 @@ export const Reports: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // 7 Core Report Definitions
+  // Core Report Definitions
   const reportDefinitions = [
-    {
-      id: 'daily-attendance-section' as ReportType,
-      name: '1. Daily Attendance (Section-Wise)',
-      icon: Calendar,
-      desc: 'Daily worker deployment, check-in muster, overtime hours, and attendance rate grouped by work trade section.',
-    },
-    {
-      id: 'weekly-attendance' as ReportType,
-      name: '2. Weekly Attendance (Section & Emply)',
-      icon: FileSpreadsheet,
-      desc: '7-day weekly attendance audit roll with day-by-day P/H/A flags, section summaries, and weekly wage accruals.',
-    },
     {
       id: 'monthly-attendance' as ReportType,
       name: '3. Monthly Attendance (Section & Emply)',
@@ -484,13 +472,28 @@ export const Reports: React.FC = () => {
   const monthlyReportData = useMemo(() => {
     // Section-Wise Monthly Summary
     const sectionMonthly = accessibleSections.map((sec) => {
-      const secWorkers = accessibleWorkers.filter((w) => w.currentSectionId === sec.id);
+      let secWorkers = workers.filter((w) => w.currentSectionId === sec.id);
+      if (isSupervisor) {
+        secWorkers = secWorkers.filter((w) => w.currentSiteId === assignedSiteId);
+      }
+      if (filterSiteId) {
+        secWorkers = secWorkers.filter((w) => w.currentSiteId === filterSiteId);
+      }
+      if (filterWorkerType !== 'all') {
+        secWorkers = secWorkers.filter((w) => w.workerType === filterWorkerType);
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        secWorkers = secWorkers.filter((w) => w.name.toLowerCase().includes(q) || w.id.toLowerCase().includes(q) || sec.name.toLowerCase().includes(q) || sec.code.toLowerCase().includes(q));
+      }
       const secWorkerIds = new Set(secWorkers.map((w) => w.id));
       const monthRecords = attendance.filter((a) => {
         if (!secWorkerIds.has(a.workerId)) return false;
         if (dateFilterMode === 'custom') {
           return a.date >= customStartDate && a.date <= customEndDate;
         }
+        if (monthlyPeriod === 'daily') return a.date === selectedDate;
+        if (monthlyPeriod === 'weekly') return a.date >= activeWeekInfo.startDate && a.date <= activeWeekInfo.endDate;
         return a.date.startsWith(selectedMonth);
       });
 
@@ -500,7 +503,16 @@ export const Reports: React.FC = () => {
       const presentMandays = presentCount + halfDayCount * 0.5;
 
       const [y, m] = selectedMonth.split('-').map(Number);
-      const daysInMonth = new Date(y, m, 0).getDate();
+      let daysInMonth = new Date(y, m, 0).getDate();
+      if (dateFilterMode === 'custom') {
+        const start = new Date(customStartDate);
+        const end = new Date(customEndDate);
+        daysInMonth = Math.max(1, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      } else if (monthlyPeriod === 'daily') {
+        daysInMonth = 1;
+      } else if (monthlyPeriod === 'weekly') {
+        daysInMonth = 7;
+      }
       const maxMandays = Math.max(1, secWorkers.length * daysInMonth);
       const musterRate = ((presentMandays / maxMandays) * 100).toFixed(1);
 
@@ -532,6 +544,8 @@ export const Reports: React.FC = () => {
         if (dateFilterMode === 'custom') {
           return a.date >= customStartDate && a.date <= customEndDate;
         }
+        if (monthlyPeriod === 'daily') return a.date === selectedDate;
+        if (monthlyPeriod === 'weekly') return a.date >= activeWeekInfo.startDate && a.date <= activeWeekInfo.endDate;
         return a.date.startsWith(selectedMonth);
       });
 
@@ -586,6 +600,12 @@ export const Reports: React.FC = () => {
   }, [
     accessibleSections,
     accessibleWorkers,
+    workers,
+    isSupervisor,
+    assignedSiteId,
+    filterSiteId,
+    filterWorkerType,
+    searchQuery,
     attendance,
     selectedMonth,
     sites,
@@ -593,6 +613,9 @@ export const Reports: React.FC = () => {
     dateFilterMode,
     customStartDate,
     customEndDate,
+    monthlyPeriod,
+    selectedDate,
+    activeWeekInfo,
   ]);
 
   // REPORT 4: Advance Payment Report Data
@@ -1343,7 +1366,11 @@ export const Reports: React.FC = () => {
     } else if (activeReport === 'monthly-attendance') {
       reportTitle = `Monthly Attendance Report (${monthlyViewMode === 'section' ? 'Section-Wise' : 'Employee-Wise'})`;
       subtitle = 'Statutory Monthly Labor Muster Sheet & Gross Payout Audit';
-      if (!periodLabel) periodLabel = `Month: ${selectedMonth}`;
+      if (!periodLabel) {
+        if (monthlyPeriod === 'daily') periodLabel = `Date: ${selectedDate}`;
+        else if (monthlyPeriod === 'weekly') periodLabel = activeWeekInfo.label;
+        else periodLabel = `Month: ${selectedMonth}`;
+      }
 
       if (monthlyViewMode === 'section') {
         const totalMandays = monthlyReportData.sectionMonthly.reduce((s, d) => s + d.presentMandays, 0);
@@ -1844,6 +1871,7 @@ export const Reports: React.FC = () => {
             <>
               {/* Standard Mode: Dynamic Date / Period Selectors based on Report */}
               {activeReport === 'daily-attendance-section' ||
+                (activeReport === 'monthly-attendance' && monthlyPeriod === 'daily') ||
                 (activeReport === 'advance-payments' && advancePeriod === 'daily') ||
                 (activeReport === 'food-report' && foodPeriod === 'daily') ||
                 (activeReport === 'overall-reports' && overallPeriod === 'daily') ? (
@@ -1862,7 +1890,7 @@ export const Reports: React.FC = () => {
 
               {/* Month Selector for Weekly, Monthly, or Monthly period modes */}
               {activeReport === 'weekly-attendance' ||
-                activeReport === 'monthly-attendance' ||
+                (activeReport === 'monthly-attendance' && monthlyPeriod !== 'daily') ||
                 (activeReport === 'advance-payments' && advancePeriod !== 'daily') ||
                 (activeReport === 'food-report' && foodPeriod !== 'daily') ||
                 (activeReport === 'overall-reports' && overallPeriod === 'monthly') ? (
@@ -1881,6 +1909,7 @@ export const Reports: React.FC = () => {
 
               {/* Week Selector Pills if Weekly Report or Weekly Period */}
               {activeReport === 'weekly-attendance' ||
+                (activeReport === 'monthly-attendance' && monthlyPeriod === 'weekly') ||
                 (activeReport === 'advance-payments' && advancePeriod === 'weekly') ||
                 (activeReport === 'food-report' && foodPeriod === 'weekly') ||
                 (activeReport === 'overall-reports' && overallPeriod === 'weekly') ? (
@@ -2017,25 +2046,44 @@ export const Reports: React.FC = () => {
 
           {/* Report 3: Monthly View Mode Switch */}
           {activeReport === 'monthly-attendance' && (
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-slate-500">View Dimension:</span>
-              <div className="inline-flex p-1 bg-slate-100 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setMonthlyViewMode('section')}
-                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${monthlyViewMode === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
-                >
-                  Section-Wise View
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMonthlyViewMode('employee')}
-                  className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${monthlyViewMode === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
-                    }`}
-                >
-                  Employee-Wise View
-                </button>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-slate-500">View Dimension:</span>
+                <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyViewMode('section')}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${monthlyViewMode === 'section' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
+                  >
+                    Section-Wise View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyViewMode('employee')}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${monthlyViewMode === 'employee' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600'
+                      }`}
+                  >
+                    Employee-Wise View
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-slate-500">Period:</span>
+                <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+                  {(['daily', 'weekly', 'monthly'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setMonthlyPeriod(p)}
+                      className={`px-2.5 py-1 rounded-lg font-bold text-xs capitalize transition-all cursor-pointer ${monthlyPeriod === p ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
